@@ -118,7 +118,7 @@ const headCells: readonly HeadCell[] = [
     id: 'yearLow',
     numeric: true,
     disablePadding: false,
-    label: 'Year High'
+    label: 'Year Low'
   },
   {
     id: 'yearLowVsCurrentPercentage',
