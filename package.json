@@ -39,7 +39,7 @@
   "scripts": {
     "ts-check": "tsc --noEmit",
     "start": "set \"GENERATE_SOURCEMAP=false\" && npm run lint && react-scripts start",
-    "build": "set \"GENERATE_SOURCEMAP=false\" && react-scripts build",
+    "build": "CI=false set \"GENERATE_SOURCEMAP=false\" && react-scripts build",
     "predeploy": "CI=false yarn build",
     "deploy": "gh-pages -d build --add && gh-pages -d build --message 'Deployed using GitHub Actions'",
     "deploy-test-environment": "gh-pages -b test-deploy -d build --add && gh-pages -b test-deploy -d build",
