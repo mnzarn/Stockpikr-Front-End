@@ -31,7 +31,7 @@ import {
               component={Link}
               to="/signin"
             >
-              Sign
+              Sign In
             </Button>
           </Box>
         </>
