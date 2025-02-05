@@ -32,7 +32,7 @@ export default function SignIn() {
           size="large"
           color="inherit"
           variant="outlined"
-          href={`${process.env.REACT_APP_GOOGLE_OAUTH_URL}`}
+          href="https://stockpikr2.azurewebsites.net/auth/google"
           startIcon={<GoogleIcon />}
         >
           Sign In with Google
