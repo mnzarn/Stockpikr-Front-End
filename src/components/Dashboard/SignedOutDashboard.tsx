@@ -1,93 +1,69 @@
-import { Box, Grid } from '@mui/material';
-import React, { useEffect, useState } from 'react';
-import { MarketData, TickerTape, Timeline } from 'react-ts-tradingview-widgets';
-import { IStockPriceChange } from '../../interfaces/IStockPriceChange';
-import { IStockQuote } from '../../interfaces/IStockQuote';
-import { StockApiService } from '../../services/StockApiService';
-import { useAsyncError } from '../GlobalErrorBoundary';
-import StockPriceChangeDataTable from './StockChangeDataTable';
+import LockIcon from '@mui/icons-material/Lock';
+import { Box, Button, Paper } from '@mui/material';
+import { Link } from 'react-router-dom';
 
-const Dashboard: React.FC = () => {
-  const [stockQuote, setStockData] = useState<IStockQuote[]>([]);
-  const [gainers, setGainers] = useState<IStockPriceChange[]>([]);
-  const [actives, setActives] = useState<IStockPriceChange[]>([]);
-  const [losers, setLosers] = useState<IStockPriceChange[]>([]);
-  const throwError = useAsyncError();
-
-  useEffect(() => {
-    const fetchDataTable = async (): Promise<void> => {
-      const blueChipSymbols: string[] = ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'JNJ', 'PG', 'KO', 'JPM', 'DIS', 'INTC']; // Place holder symbols
-      StockApiService.fetchLatestStockQuote(blueChipSymbols).then((response) => {
-        if (response.length === 0) {
-          return;
-        }
-        setStockData(response);
-      });
-    };
-
-    fetchDataTable().catch((error) => {
-      throwError(error);
-    });
-
-    const fetchGainers = async (): Promise<void> => {
-      StockApiService.fetchMarketGainers().then((response) => {
-        if (response.length === 0) {
-          return;
-        }
-        setGainers(response);
-      });
-    };
-    fetchGainers().catch((error) => {
-      throwError(error);
-    });
-    const fetchLosers = async (): Promise<void> => {
-      StockApiService.fetchMarketLosers().then((response) => {
-        if (response.length === 0) {
-          return;
-        }
-        setLosers(response);
-      });
-    };
-    fetchLosers().catch((error) => {
-      throwError(error);
-    });
-    const fetchActives = async (): Promise<void> => {
-      StockApiService.fetchMarketActives().then((response) => {
-        if (response.length === 0) {
-          return;
-        }
-        setActives(response);
-      });
-    };
-    fetchActives().catch((error) => {
-      throwError(error);
-    });
-  }, []);
+const MyDashboard = () => {
+  const handleLogin = () => {
+    localStorage.setItem('isLoggedIn', 'true');
+  };
 
   return (
-    <Box sx={{ margin: '20px' }}>
-      <Grid container spacing={4}>
-        <Grid item xs={12}>
-          <TickerTape></TickerTape>
-        </Grid>
-        <Grid item xs={6}>
-          <MarketData colorTheme="light" width="100%" height="900"></MarketData>
-        </Grid>
-        <Grid item xs={6}>
-          <Timeline feedMode="market" market="stock" height="900" width="100%"></Timeline>
-        </Grid>
-        <Grid item xs={4}>
-          <StockPriceChangeDataTable data={gainers} title="Market Most Gainers"></StockPriceChangeDataTable>
-        </Grid>
-        <Grid item xs={4}>
-          <StockPriceChangeDataTable data={losers} title="Market Most Losers"></StockPriceChangeDataTable>
-        </Grid>
-        <Grid item xs={4}>
-          <StockPriceChangeDataTable data={actives} title="Market Most Actives"></StockPriceChangeDataTable>
-        </Grid>
-      </Grid>
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px" padding={3}>
+      <Paper
+        elevation={3}
+        sx={{
+          width: '100%',
+          maxWidth: '400px',
+          padding: 4,
+          borderRadius: '10px',
+          textAlign: 'center'
+        }}
+      >
+        <LockIcon
+          sx={{
+            fontSize: 48,
+            color: 'text.secondary',
+            marginBottom: 2
+          }}
+        />
+        <h2
+          style={{
+            fontSize: '1.5rem',
+            fontWeight: 600,
+            marginBottom: '1rem'
+          }}
+        >
+          Sign In Required
+        </h2>
+        <p
+          style={{
+            color: 'text.secondary',
+            marginBottom: '2rem'
+          }}
+        >
+          Please sign in to access your dashboard page and view your portfolio details.
+        </p>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleLogin}
+          component={Link}
+          to="/signin"
+          style={{
+            backgroundColor: 'var(--navbar-bg-color)',
+            textDecoration: 'none',
+            borderRadius: '20px',
+            padding: '10px 20px',
+            fontWeight: 'bold',
+            fontFamily: 'inherit',
+            border: '2px white solid'
+          }}
+        >
+          Sign In
+        </Button>
+      </Paper>
     </Box>
   );
 };
 
-export default Dashboard;
+export default MyDashboard;
