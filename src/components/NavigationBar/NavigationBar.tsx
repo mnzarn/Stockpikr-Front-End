@@ -28,7 +28,7 @@ function NavigationHeader() {
             margin: '5px',
           }}
           component={Link}
-          to="../../dashboard/signedoutdashboard"
+          to="../../dashboard"
         >
           Dashboard
         </Button>
