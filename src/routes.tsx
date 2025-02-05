@@ -41,9 +41,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ signedInComponent: Sign
 const routes = () => (
   <Routes>
     <Route path="/" element={<LandingPage />} />
-    <Route path="/watchlist" element={<ProtectedRoute signedInComponent={Watchlist} signedOutComponent={SignedOutWatchlist} />} />
-    <Route path="/dashboard" element={<ProtectedRoute signedInComponent={Dashboard} signedOutComponent={SignedOutDashboard} />} />
-    <Route path="/positions" element={<ProtectedRoute signedInComponent={Positions} signedOutComponent={SignedOutPositions} />} />
+    <Route path="/watchlist" element={<Watchlist />} />
+    <Route path="/dashboard" element={<Dashboard />} />
+    <Route path="/positions" element={<Positions />} />
     <Route path="/settings" element={<Settings />} />
     <Route path="/signin" element={<SignIn />} />
     <Route path="/swaggerDocs" element={<SwaggerDocs />} />
