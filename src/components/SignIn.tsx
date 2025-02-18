@@ -32,9 +32,9 @@ export default function SignIn() {
           size="large"
           color="inherit"
           variant="outlined"
-          href="https://agreeable-ground-08e4a8b1e.4.azurestaticapps.net/auth/google/callback
+          href="https://stockpikr2.azurewebsites.net/login/federated/google"
           startIcon={<GoogleIcon />}
-        >
+        />
           Sign In with Google
         </Button>
       </Card>
