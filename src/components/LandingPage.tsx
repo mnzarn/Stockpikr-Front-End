@@ -114,7 +114,6 @@ const LandingPage: React.FC = () => {
               </ListItemText>
             </ListItem>
           </List>
-
           <Button
             variant="contained"
             color="primary"
@@ -130,16 +129,16 @@ const LandingPage: React.FC = () => {
             component={Link}
             to="/signin"
           >
-            Login to Access your Dashboard Now
+            Login to Access your personalized Watchlist, Dashboard and More Now!
           </Button>
         </div>
+
       </Container>
       <div style={{ margin: '50', padding: '50', flex: 1 }}>
         <img
           src={require('../assets/images/image-landing-page.jpg')}
           alt="StockPikr Image"
-          style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
-        />
+          style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }} />
       </div>
     </Container>
   );
