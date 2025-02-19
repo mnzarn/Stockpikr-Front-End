@@ -32,7 +32,7 @@ export default function SignIn() {
           size="large"
           color="inherit"
           variant="outlined"
-          href="https://agreeable-ground-08e4a8b1e.4.azurestaticapps.net/auth/google/callback"
+          href="http://40.78.98.127:5000/auth/google"
           startIcon={<GoogleIcon />}
         >
           Sign In with Google
