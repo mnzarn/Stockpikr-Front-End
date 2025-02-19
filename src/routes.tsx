@@ -43,7 +43,7 @@ const routes = () => (
     <Route path="/" element={<LandingPage />} />
     <Route path="/watchlist" element={<Watchlist />} />
     <Route path="/dashboard" element={<Dashboard />} />
-    <Route path="/positions" element={<Positions />} />
+    <Route path="/positions" element={<ProtectedRoute signedInComponent={Positions} signedOutComponent={SignedOutPositions} />} />
     <Route path="/settings" element={<Settings />} />
     <Route path="/signin" element={<SignIn />} />
     <Route path="/swaggerDocs" element={<SwaggerDocs />} />
