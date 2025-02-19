@@ -14,10 +14,11 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import Container from '@mui/material/Container';
 import '../../index';
 
-const drawerWidth = 240;
-const drawingContents = ['Account', 'Help'];
+const drawerWidth = 280;
+const drawingContents = ['Account', 'Notifications', 'Security', 'Help'];
 const defaultSettingView = 'Account';
 
 const componentMapping: Record<string, React.ComponentType<any>> = {
@@ -36,40 +37,109 @@ export default function Settings() {
   };
 
   const drawer = (
-    <div>
+    <Box sx={{ 
+      height: '100%',
+      background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)'
+    }}>
       <Toolbar />
       <Divider />
       <List>
         {drawingContents.map((setting) => (
           <ListItem key={setting} disablePadding>
-            <ListItemButton onClick={() => handleItemClick(setting)}>
-              <ListItemText primary={setting} />
+            <ListItemButton 
+              onClick={() => handleItemClick(setting)}
+              sx={{
+                borderRadius: '8px',
+                mx: 1,
+                '&:hover': {
+                  backgroundColor: 'rgba(26, 54, 93, 0.08)',
+                },
+                '&.Mui-selected': {
+                  backgroundColor: 'rgba(26, 54, 93, 0.12)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(26, 54, 93, 0.16)',
+                  }
+                }
+              }}
+              selected={selectedComponent === setting}
+            >
+              <ListItemText 
+                primary={setting} 
+                sx={{
+                  '& .MuiTypography-root': {
+                    color: '#1a365d',
+                    fontFamily: "'Raleway', sans-serif",
+                    fontWeight: selectedComponent === setting ? 600 : 400
+                  }
+                }}
+              />
             </ListItemButton>
           </ListItem>
         ))}
       </List>
       <Divider />
-    </div>
+    </Box>
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
+    <Box 
+      sx={{ 
+        display: 'flex',
+        background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)',
+        minHeight: '90vh'
+      }}
+    >
+      <Box 
+        component="nav" 
+        sx={{ 
+          width: { sm: drawerWidth }, 
+          flexShrink: { sm: 0 }
+        }}
+      >
         <Drawer
           variant="permanent"
           sx={{
             display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, top: '11%' }
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerWidth, 
+              top: '11%',
+              borderRight: '1px solid rgba(26, 54, 93, 0.12)',
+              boxShadow: '4px 0 12px rgba(26, 54, 93, 0.05)'
+            }
           }}
         >
           {drawer}
         </Drawer>
       </Box>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
-        <Typography component={'span'}>
-          {selectedComponent && React.createElement(componentMapping[selectedComponent])}
-        </Typography>
+      <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1,
+          background: '#ffffff',
+          borderRadius: '16px',
+          m: 3,
+          p: 4,
+          boxShadow: '0 4px 12px rgba(26, 54, 93, 0.08)'
+        }}
+      >
+        <Container maxWidth="lg">
+          <Typography 
+            variant="h4" 
+            sx={{ 
+              color: '#1a365d',
+              fontFamily: "'Raleway', sans-serif",
+              fontWeight: 700,
+              mb: 4
+            }}
+          >
+            {selectedComponent} Settings
+          </Typography>
+          <Typography component={'span'}>
+            {selectedComponent && React.createElement(componentMapping[selectedComponent])}
+          </Typography>
+        </Container>
       </Box>
     </Box>
   );
