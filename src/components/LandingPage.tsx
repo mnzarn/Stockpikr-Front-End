@@ -1,7 +1,11 @@
 import { Box, Button, Container, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import LogoImage from '../assets/images/logo-title-light-mode.png';
+import landingPageImage from '../assets/images/image-landing-page.jpg';
+import investmentPlanningImage from '../assets/images/investment-planning.png';
+import priceTrackingImage from '../assets/images/price-tracking.png';
+import stockAnalysisImage from '../assets/images/stock-analysis.png';
+import stockFilterImage from '../assets/images/stock-filter.png';
 import '../index.css';
 
 interface Feature {
@@ -46,28 +50,28 @@ const LandingPage: React.FC = () => {
       title: 'Easy Filtering & Viewing',
       description: 'Streamline your stock analysis with intuitive filtering tools. Quickly sort and view your watchlists based on multiple criteria, making it easier than ever to track your potential investments.',
       icon: '✨',
-      image: require('../assets/images/image-landing-page.jpg')
+      image: stockFilterImage
     },
     {
       id: 'tracking',
       title: 'Real-Time Price Tracking',
       description: 'Stay on top of market movements with our comprehensive price tracking feature. Monitor multiple stocks simultaneously and never miss an important price change.',
       icon: '📈',
-      image: require('../assets/images/image-landing-page.jpg')
+      image: priceTrackingImage
     },
     {
       id: 'analysis',
       title: 'Deep Stock Analysis',
       description: 'Get detailed insights into stock performance with our advanced analysis tools. From technical indicators to fundamental metrics, make informed decisions with comprehensive data.',
       icon: '📊',
-      image: require('../assets/images/image-landing-page.jpg')
+      image: stockAnalysisImage
     },
     {
       id: 'planning',
       title: 'Investment Planning',
       description: 'Build and refine your investment strategy with our planning tools. Set goals, track performance, and adjust your approach based on real market data.',
       icon: '📝',
-      image: require('../assets/images/image-landing-page.jpg')
+      image: investmentPlanningImage
     }
   ];
 
@@ -148,7 +152,7 @@ const LandingPage: React.FC = () => {
           </Box>
           <Box sx={{ flex: 1 }}>
             <img
-              src={require('../assets/images/image-landing-page.jpg')}
+              src={landingPageImage}
               alt="StockPikr Dashboard"
               style={{
                 width: '100%',
@@ -245,7 +249,6 @@ const LandingPage: React.FC = () => {
         </Box>
       ))}
 
-      ```typescript
       <Box
         sx={{
           py: 12,
