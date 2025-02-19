@@ -33,8 +33,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ signedInComponent: Sign
     checkUserLoggedIn();
   }, []);
 
-  if (isLoading) return <div>Loading...</div>;
-
   return isUserLoggedIn ? <SignedIn /> : <SignedOut />;
 };
 
