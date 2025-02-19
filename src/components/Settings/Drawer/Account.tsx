@@ -42,21 +42,94 @@ export const Account: React.FC = () => {
   }, []);
 
   return (
-    <Paper elevation={3} sx={{ padding: 3, maxWidth: 600, margin: 'auto', borderRadius: 8 }}>
-      <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
-        <Avatar sx={{ bgcolor: 'f4f', width: 100, height: 100 }} src={accountValues.profilePic}></Avatar>
-        <Typography variant="h5" mt={2}>
+    <Paper 
+      elevation={0}
+      sx={{ 
+        padding: 4,
+        maxWidth: 800,
+        margin: 'auto',
+        borderRadius: 3,
+        background: 'linear-gradient(135deg, #f8faff 0%, #ffffff 100%)',
+        border: '1px solid rgba(26, 54, 93, 0.12)',
+        boxShadow: '0 8px 24px rgba(26, 54, 93, 0.08)'
+      }}
+    >
+      <Box 
+        display="flex" 
+        flexDirection="column" 
+        alignItems="center" 
+        mb={4}
+      >
+        <Avatar 
+          sx={{ 
+            width: 120,
+            height: 120,
+            border: '4px solid #ffffff',
+            boxShadow: '0 4px 12px rgba(26, 54, 93, 0.15)'
+          }} 
+          src={accountValues.profilePic}
+        />
+        <Typography 
+          variant="h4" 
+          mt={3}
+          sx={{
+            color: '#1a365d',
+            fontFamily: "'Raleway', sans-serif",
+            fontWeight: 700
+          }}
+        >
           {accountValues.firstName} {accountValues.lastName}
         </Typography>
       </Box>
 
-      <Divider sx={{ marginBottom: 2 }} />
+      <Divider sx={{ 
+        marginBottom: 4,
+        borderColor: 'rgba(26, 54, 93, 0.12)'
+      }} />
 
-      <Box display="grid" gap={2}>
+      <Box 
+        display="grid" 
+        gap={3}
+        sx={{
+          '& .MuiTypography-root': {
+            fontFamily: "'Raleway', sans-serif",
+          }
+        }}
+      >
         {accountFields.map(({ label, name, type }: IAccountField) => (
-          <Typography key={name} variant="body1">
-            {label}: {accountValues[name]}
-          </Typography>
+          <Box 
+            key={name}
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              padding: 2,
+              borderRadius: 2,
+              backgroundColor: 'rgba(248, 250, 255, 0.8)',
+              border: '1px solid rgba(26, 54, 93, 0.08)'
+            }}
+          >
+            <Typography 
+              variant="body1"
+              sx={{
+                color: '#2c5282',
+                fontWeight: 600,
+                minWidth: 120
+              }}
+            >
+              {label}:
+            </Typography>
+            <Typography 
+              variant="body1"
+              sx={{
+                color: '#1a365d',
+                flex: 1
+              }}
+            >
+              {accountValues[name]}
+            </Typography>
+          </Box>
         ))}
       </Box>
     </Paper>
