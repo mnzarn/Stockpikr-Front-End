@@ -1,5 +1,6 @@
 import { Avatar, Box, Divider, Paper, Typography } from '@mui/material';
 import React, { useState } from 'react';
+import '../../../index.css';
 import { IAccountValues } from '../../../interfaces/IAccountValues';
 import { UserApiService } from '../../../services/UserApiService';
 
@@ -42,21 +43,91 @@ export const Account: React.FC = () => {
   }, []);
 
   return (
-    <Paper elevation={3} sx={{ padding: 3, maxWidth: 600, margin: 'auto', borderRadius: 8 }}>
-      <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
-        <Avatar sx={{ bgcolor: 'f4f', width: 100, height: 100 }} src={accountValues.profilePic}></Avatar>
-        <Typography variant="h5" mt={2}>
+    <Paper
+      elevation={0}
+      sx={{
+        padding: 4,
+        maxWidth: 800,
+        margin: 'auto',
+        borderRadius: 3,
+        background: `linear-gradient(135deg, var(--background-light) 0%, var(--main-bg-color) 100%)`,
+        border: `1px solid var(--border-color)`,
+        boxShadow: `0 8px 24px var(--border-color)`
+      }}
+    >
+      <Box display="flex" flexDirection="column" alignItems="center" mb={4}>
+        <Avatar
+          sx={{
+            width: 120,
+            height: 120,
+            border: `4px solid var(--main-bg-color)`,
+            boxShadow: `0 4px 12px var(--border-color)`
+          }}
+          src={accountValues.profilePic}
+        />
+        <Typography
+          variant="h4"
+          mt={3}
+          sx={{
+            color: 'var(--primary-blue)',
+            fontFamily: 'var(--font-family)',
+            fontWeight: 700
+          }}
+        >
           {accountValues.firstName} {accountValues.lastName}
         </Typography>
       </Box>
 
-      <Divider sx={{ marginBottom: 2 }} />
+      <Divider
+        sx={{
+          marginBottom: 4,
+          borderColor: 'var(--border-color)'
+        }}
+      />
 
-      <Box display="grid" gap={2}>
+      <Box
+        display="grid"
+        gap={3}
+        sx={{
+          '& .MuiTypography-root': {
+            fontFamily: 'var(--font-family)'
+          }
+        }}
+      >
         {accountFields.map(({ label, name, type }: IAccountField) => (
-          <Typography key={name} variant="body1">
-            {label}: {accountValues[name]}
-          </Typography>
+          <Box
+            key={name}
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              padding: 2,
+              borderRadius: 2,
+              backgroundColor: 'var(--background-light)',
+              border: `1px solid var(--border-color)`
+            }}
+          >
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'var(--secondary-blue)',
+                fontWeight: 600,
+                minWidth: 120
+              }}
+            >
+              {label}:
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'var(--primary-blue)',
+                flex: 1
+              }}
+            >
+              {accountValues[name]}
+            </Typography>
+          </Box>
         ))}
       </Box>
     </Paper>

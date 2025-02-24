@@ -36,7 +36,7 @@ jobs:
            result-encoding: string
 
       - name: Set Environment Variables
-        run: echo "REACT_APP_BACKEND_URL=https://stockpikr2.azurewebsites.net" >> $GITHUB_ENV
+        run: echo "REACT_APP_BACKEND_URL=http://40.78.98.127:5000" >> $GITHUB_ENV
         
       - name: Install Dependencies
         run: npm install --legacy-peer-deps

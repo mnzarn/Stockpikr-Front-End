@@ -3,6 +3,7 @@ import { Box, Button, Card, Stack } from '@mui/material';
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useEffect, useState } from 'react';
 import LogoImage from '../assets/images/logo-title-light-mode.png';
+import '../index.css';
 import { auth } from '../services/FirebaseConfig';
 export default function SignIn() {
   const [errorMessage, setErrorMessage] = useState('');
@@ -33,15 +34,22 @@ export default function SignIn() {
       alignItems="center"
       justifyContent="center"
       sx={{
-        backgroundColor: (t) => (t.palette.mode === 'light' ? t.palette.grey[50] : t.palette.grey[900]),
-        minHeight: '100vh'
+        background: 'linear-gradient(135deg, var(--background-light) 0%, #E5EFF8 100%)',
+        minHeight: '100vh',
+        padding: '20px',
+        fontFamily: 'var(--font-family)'
       }}
     >
       <Card
         sx={{
-          p: 5,
+          p: { xs: 4, md: 5 },
           width: 1,
-          maxWidth: 420
+          maxWidth: 420,
+          borderRadius: '16px',
+          boxShadow: '0 8px 24px var(--border-color)',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255, 255, 255, 0.3)'
         }}
       >
         <Box
