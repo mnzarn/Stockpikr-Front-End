@@ -1,15 +1,12 @@
 import { ComponentType, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import Dashboard from './components/Dashboard/Dashboard';
-import SignedOutDashboard from './components/Dashboard/SignedOutDashboard';
 import LandingPage from './components/LandingPage';
 import Positions from './components/Positions/Positions';
-import SignedOutPositions from './components/Positions/SignedOutPositions';
 import Settings from './components/Settings/Settings';
 import SignIn from './components/SignIn';
 import { StockQuotePage } from './components/Stock/StockQuotePage';
 import SwaggerDocs from './components/Swagger/SwaggerDocs';
-import SignedOutWatchlist from './components/Watchlist/SignedOutWatchlist';
 import Watchlist from './components/Watchlist/Watchlist';
 import { UserApiService } from './services/UserApiService';
 

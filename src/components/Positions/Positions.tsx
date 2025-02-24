@@ -13,8 +13,8 @@ import {
 } from '@mui/material';
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { userID } from '../../helper/constants';
 import { getErrorResponse } from '../../helper/errorResponse';
+import { getUserID } from '../../helper/userID';
 import { PositionTickers } from '../../interfaces/IPositionsModel';
 import { IStockQuote } from '../../interfaces/IStockQuote';
 import { PositionsApiService } from '../../services/PositionsApiService';
@@ -89,6 +89,7 @@ export default function MyPositions() {
   const queryPurchasedStocks = async () => {
     const wls = await PositionsApiService.fetchPurchasedStocksByUserId();
     const updatedPositions: { [key: string]: PositionTickers[] } = {};
+    const userID: string = await getUserID();
     updatedPositions[userID] = wls.flatMap((positions) => positions.tickers);
     setPositions(updatedPositions);
   };
