@@ -17,6 +17,8 @@ jobs:
     permissions:
        id-token: write
        contents: read
+    env:
+      skip_deploy_on_missing_secrets: true
     steps:
       - uses: actions/checkout@v3
         with:
