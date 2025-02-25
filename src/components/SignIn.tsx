@@ -1,9 +1,34 @@
 import GoogleIcon from '@mui/icons-material/Google';
 import { Box, Button, Card, Stack } from '@mui/material';
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { useEffect, useState } from 'react';
 import LogoImage from '../assets/images/logo-title-light-mode.png';
 import '../index.css';
-
+import { auth } from '../services/FirebaseConfig';
 export default function SignIn() {
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider); 
+      window.location.href = '/dashboard';
+    } catch (error) {
+      setErrorMessage((error as Error).message);
+    }
+  };
+
+  // If already signed in, redirect to dashboard
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        window.location.href = '/#/dashboard';
+      }
+    });
+
+    return () => unsubscribe(); 
+  }, []);
+
   return (
     <Stack
       alignItems="center"
@@ -28,54 +53,25 @@ export default function SignIn() {
         }}
       >
         <Box
+          component="img"
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 4
+            height: '100px'
           }}
+          alt="StockPikr"
+          src={LogoImage}
+        />
+        {errorMessage && <p>{errorMessage}</p>}
+        <Button
+          fullWidth
+          size="large"
+          color="inherit"
+          variant="outlined"
+          onClick={handleGoogleSignIn}
+          //href="https://agreeable-ground-08e4a8b1e.4.azurestaticapps.net/auth/google/callback"
+          startIcon={<GoogleIcon />}
         >
-          <Box
-            component="img"
-            sx={{
-              height: '100px',
-              animation: 'float 3s ease-in-out infinite',
-              '@keyframes float': {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' }
-              }
-            }}
-            alt="StockPikr"
-            src={LogoImage}
-          />
-
-          <Button
-            fullWidth
-            size="large"
-            variant="contained"
-            href="http://40.78.98.127:5000/auth/google"
-            startIcon={<GoogleIcon />}
-            sx={{
-              backgroundColor: 'var(--primary-blue)',
-              color: 'var(--text-color)',
-              borderRadius: '12px',
-              padding: '12px 0',
-              fontSize: '1rem',
-              fontWeight: 600,
-              textTransform: 'none',
-              fontFamily: 'var(--font-family)',
-              border: '2px solid var(--primary-blue)',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                backgroundColor: 'var(--secondary-blue)',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 6px 12px var(--border-color)'
-              }
-            }}
-          >
-            Sign In with Google
-          </Button>
-        </Box>
+          Sign In with Google
+        </Button>
       </Card>
     </Stack>
   );

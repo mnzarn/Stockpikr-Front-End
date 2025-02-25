@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import Bottleneck from 'bottleneck';
+import { getAuth } from "firebase/auth";
 
 export class BaseApiService {
   //----------------------------------------------------------------//
@@ -8,16 +9,32 @@ export class BaseApiService {
 
   protected static readonly baseEndpoint = '/api';
   private static _apiService: AxiosInstance | null = null;
+
   public static get apiService(): AxiosInstance {
     if (BaseApiService._apiService == null) {
       BaseApiService._apiService = axios.create({
-        baseURL: process.env.REACT_APP_BACKEND_URL || '',
+        baseURL: 'http://40.78.98.127:5000',
+        // baseURL: process.env.REACT_APP_BACKEND_URL || '',
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-cache',
         }
       });
+
+      // Add a request interceptor to include the Firebase token
+      BaseApiService._apiService.interceptors.request.use(async (config) => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (user) {
+          const token = await user.getIdToken();
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      }, (error) => {
+        return Promise.reject(error);
+      });
     }
+
     return BaseApiService._apiService;
   }
   private static limiter = new Bottleneck({

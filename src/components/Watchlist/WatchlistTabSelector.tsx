@@ -2,7 +2,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { Box, Button, ButtonGroup, DialogContentText } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { serializeError } from 'serialize-error';
-import { userID } from '../../helper/constants';
+import { getUserID } from '../../helper/userID';
 import { Watchlists } from '../../interfaces/IWatchlistModel';
 import { WatchlistApiService } from '../../services/WatchlistApiService';
 import AutocompleteComponent from './Autocomplete';
@@ -37,6 +37,7 @@ export const WatchlistTabSelector = (props: WatchlistTabSelectorProps) => {
   const handleCreateNewWatchlist = async (value: string) => {
     if (value && props.watchLists) {
       try {
+        const userID: string = await getUserID();
         const name = await WatchlistApiService.createWatchlist({
           watchlistName: value,
           tickers: [],

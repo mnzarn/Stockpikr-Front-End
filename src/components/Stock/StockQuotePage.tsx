@@ -9,8 +9,8 @@ import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { FundamentalData, MiniChart, SymbolInfo, TechnicalAnalysis, Timeline } from 'react-ts-tradingview-widgets';
-import { userID } from '../../helper/constants';
 import { getErrorResponse } from '../../helper/errorResponse';
+import { getUserID } from '../../helper/userID';
 import { ICompanyProfile } from '../../interfaces/ICompanyProfile';
 import { IStockQuote } from '../../interfaces/IStockQuote';
 import { Watchlists } from '../../interfaces/IWatchlistModel';
@@ -84,6 +84,7 @@ export const StockQuotePage: React.FC = () => {
   }, [location]);
 
   const queryWatchLists = async (symbolParam: string | null) => {
+    const userID: string = await getUserID();
     const wls = await WatchlistApiService.fetchWatchlistsByUserId(userID);
     var inWatchList = false;
     if (Array.isArray(wls)) {

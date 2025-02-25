@@ -14,9 +14,9 @@ import {
   TableRow,
   TextField
 } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { serializeError } from 'serialize-error';
-import { userID } from '../../helper/constants';
+import { getUserID } from '../../helper/userID';
 import { AlertData, MinimalWatchlistTicker, WatchlistTicker, Watchlists } from '../../interfaces/IWatchlistModel';
 import { WatchlistApiService } from '../../services/WatchlistApiService';
 import { useAsyncError } from '../GlobalErrorBoundary';
@@ -129,6 +129,7 @@ export default function Watchlist() {
   const throwError = useAsyncError();
 
   const queryWatchLists = async () => {
+    const userID: string = await getUserID();
     const wls = await WatchlistApiService.fetchWatchlistsByUserId(userID);
     if (Array.isArray(wls)) {
       let tempWls: Watchlists = {};
@@ -152,6 +153,7 @@ export default function Watchlist() {
   const handleCreateNewWatchlist = async (value: string) => {
     if (value && watchLists) {
       try {
+        const userID: string = await getUserID();
         const name = await WatchlistApiService.createWatchlist({
           watchlistName: value,
           tickers: [],
