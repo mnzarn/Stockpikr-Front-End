@@ -12,11 +12,12 @@ import { Link } from 'react-router-dom';
 import '../../index.css';
 import { UserApiService } from '../../services/UserApiService';
 
-const pages = [
-  { title: 'Dashboard', key: 'dashboard' },
-  { title: 'Watchlist', key: 'watchlist' },
-  { title: 'My Positions', key: 'positions' }
-];
+// Comment out the pages array as these links are already in NavigationBar
+// const pages = [
+//   { title: 'Dashboard', key: 'dashboard' },
+//   { title: 'Watchlist', key: 'watchlist' },
+//   { title: 'My Positions', key: 'positions' }
+// ];
 const settings = [
   { title: 'Settings', key: 'settings' },
   { title: 'Logout', key: 'logout' }
@@ -78,7 +79,8 @@ function NavigationAccount() {
 
   return (
     <>
-      <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
+      {/* Comment out the mobile menu section with duplicate navigation links */}
+      {/* <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
         <IconButton
           size="large"
           aria-label="account of current user"
@@ -114,8 +116,10 @@ function NavigationAccount() {
             </MenuItem>
           ))}
         </Menu>
-      </Box>
-      <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+      </Box> */}
+      
+      {/* Comment out the desktop navigation links section */}
+      {/* <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
         {pages.map((page) => (
           <Box key={page.key} sx={{ my: 2, marginLeft: 2, marginRight: 2 }}>
             <Link style={{ color: 'white', textDecoration: 'none' }} to={page.key}>
@@ -123,7 +127,9 @@ function NavigationAccount() {
             </Link>
           </Box>
         ))}
-      </Box>
+      </Box> */}
+      
+      {/* Keep the user account menu section */}
       <Box sx={{ flexGrow: 0 }}>
         <Tooltip title="Open settings">
           <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
