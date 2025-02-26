@@ -17,6 +17,15 @@ jobs:
     permissions:
        id-token: write
        contents: read
+    env:
+      REACT_APP_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+      REACT_APP_FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+      REACT_APP_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      REACT_APP_FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+      REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+      REACT_APP_FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+      REACT_APP_FIREBASE_MEASUREMENT_ID: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -35,19 +44,8 @@ jobs:
                return await coredemo.getIDToken()
            result-encoding: string
 
-      - name: Set Environment Variables
+      - name: Set Backend URL Environment Variable
         run: echo "REACT_APP_BACKEND_URL=http://40.78.98.127:5000" >> $GITHUB_ENV
-
-      - name: Inject Environment Variables
-        run: |
-          echo "window.ENV = {" > public/runtime-env.js
-          echo "  REACT_APP_FIREBASE_API_KEY: \"${{ secrets.FIREBASE_API_KEY }}\"," >> public/runtime-env.js
-          echo "  REACT_APP_FIREBASE_AUTH_DOMAIN: \"${{ secrets.FIREBASE_AUTH_DOMAIN }}\"," >> public/runtime-env.js
-          echo "  REACT_APP_FIREBASE_PROJECT_ID: \"${{ secrets.FIREBASE_PROJECT_ID }}\"," >> public/runtime-env.js
-          echo "  REACT_APP_FIREBASE_STORAGE_BUCKET: \"${{ secrets.FIREBASE_STORAGE_BUCKET }}\"," >> public/runtime-env.js
-          echo "  REACT_APP_FIREBASE_MESSAGING_SENDER_ID: \"${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}\"," >> public/runtime-env.js
-          echo "  REACT_APP_FIREBASE_APP_ID: \"${{ secrets.FIREBASE_APP_ID }}\"" >> public/runtime-env.js
-          echo "};" >> public/runtime-env.js
 
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
