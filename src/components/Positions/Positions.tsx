@@ -22,7 +22,7 @@ import {
   Tooltip,
   Typography
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { getErrorResponse } from '../../helper/errorResponse';
 import { getUserID } from '../../helper/userID';
@@ -112,8 +112,14 @@ export default function MyPositions() {
   const [isAddStockDialog, setAddStockDialog] = useState(false);
   const [addStockSymbol, setAddStockSymbol] = useState('');
   const [stockInfo, setStockInfo] = useState<IStockQuote>();
-  const isSelected = (symbol: string) => selected.indexOf(symbol) !== -1;
   const throwError = useAsyncError();
+
+  // Generate a unique ID for each position to use for selection
+  const generatePositionId = (position: PositionTickers): string => {
+    return `${position.symbol}-${position.purchaseDate}-${position.purchasePrice}-${position.quantity}`;
+  };
+
+  const isSelected = (positionId: string) => selected.indexOf(positionId) !== -1;
 
   const fetchStockData = async (symbol: string): Promise<void> => {
     if (!symbol) return;
@@ -135,15 +141,30 @@ export default function MyPositions() {
     }
   }, [addStockSymbol]);
 
+  // Get all positions as a flattened array with unique IDs
+  // Use useMemo to prevent recreating this array on every render
+  const allPositionsWithIds = useMemo(() => {
+    return Object.values(positions)
+      .flatMap((positionsArray) => 
+        positionsArray.map(position => ({
+          ...position,
+          positionId: generatePositionId(position)
+        }))
+      );
+  }, [positions]);
+
+  // Sort positions using the comparator
+  const sortedPositions = useMemo(() => {
+    return [...allPositionsWithIds].sort(getComparator(order, orderBy));
+  }, [allPositionsWithIds, order, orderBy]);
+
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      if (!positions || Object.keys(positions).length === 0) {
+      if (sortedPositions.length === 0) {
         setSelected([]);
         return;
       }
-      const newSelected = Object.values(positions)
-        .flatMap((positionsArray) => positionsArray)
-        .map((position) => position.symbol);
+      const newSelected = sortedPositions.map((position) => position.positionId);
       setSelected(newSelected);
       return;
     }
@@ -152,12 +173,21 @@ export default function MyPositions() {
 
   const handleDeleteStocks = async () => {
     try {
-      const patchResult = await PositionsApiService.deleteStocksInWatchlist(selected);
+      // Extract symbols from position IDs
+      const symbolsToDelete = selected.map(id => id.split('-')[0]);
+      
+      // Remove duplicates
+      const uniqueSymbolsToDelete = [...new Set(symbolsToDelete)];
+      
+      const patchResult = await PositionsApiService.deleteStocksInWatchlist(uniqueSymbolsToDelete);
       if (patchResult && patchResult.matchedCount > 0 && patchResult.modifiedCount > 0) {
         // Optimistically update UI
         const updatedPositions: { [key: string]: PositionTickers[] } = {};
         for (const key in positions) {
-          updatedPositions[key] = positions[key].filter((position) => !selected.includes(position.symbol));
+          updatedPositions[key] = positions[key].filter((position) => {
+            const positionId = generatePositionId(position);
+            return !selected.includes(positionId);
+          });
         }
         setPositions(updatedPositions);
         setSelected([]);
@@ -175,8 +205,6 @@ export default function MyPositions() {
     setOrderBy(property);
   };
 
-  // No longer needed as we're opening dialog directly from search selection
-
   const queryPurchasedStocks = async () => {
     try {
       const wls = await PositionsApiService.fetchPurchasedStocksByUserId();
@@ -193,12 +221,12 @@ export default function MyPositions() {
     queryPurchasedStocks();
   }, []);
 
-  const handleSelectStock = (event: React.MouseEvent<unknown>, symbol: string) => {
-    const selectedIndex = selected.indexOf(symbol);
+  const handleSelectStock = (event: React.MouseEvent<unknown>, positionId: string) => {
+    const selectedIndex = selected.indexOf(positionId);
     let newSelected: string[] = [];
 
     if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, symbol);
+      newSelected = newSelected.concat(selected, positionId);
     } else if (selectedIndex === 0) {
       newSelected = newSelected.concat(selected.slice(1));
     } else if (selectedIndex === selected.length - 1) {
@@ -240,7 +268,7 @@ export default function MyPositions() {
   };
 
   // Custom comparator that handles null values and dates
-  function descendingComparator(a: PositionTickers, b: PositionTickers, orderBy: keyof PositionTickers) {
+  function descendingComparator(a: PositionTickers & { positionId: string }, b: PositionTickers & { positionId: string }, orderBy: keyof PositionTickers) {
     // Special handling for purchaseDate which can be Date | null | string
     if (orderBy === 'purchaseDate') {
       // Handle null values
@@ -276,16 +304,11 @@ export default function MyPositions() {
   function getComparator(
     order: Order,
     orderBy: keyof PositionTickers
-  ): (a: PositionTickers, b: PositionTickers) => number {
+  ): (a: PositionTickers & { positionId: string }, b: PositionTickers & { positionId: string }) => number {
     return order === 'desc'
       ? (a, b) => descendingComparator(a, b, orderBy)
       : (a, b) => -descendingComparator(a, b, orderBy);
   }
-
-  // Get all positions as a flattened array
-  const allPositions = Object.values(positions)
-    .flatMap((positionsArray) => positionsArray)
-    .sort(getComparator(order, orderBy));
 
   return (
     <TableContainer
@@ -368,8 +391,8 @@ export default function MyPositions() {
               <TableCell padding="checkbox">
                 <Checkbox
                   color="primary"
-                  indeterminate={selected.length > 0 && selected.length < allPositions.length}
-                  checked={allPositions.length > 0 && selected.length === allPositions.length}
+                  indeterminate={selected.length > 0 && selected.length < sortedPositions.length}
+                  checked={sortedPositions.length > 0 && selected.length === sortedPositions.length}
                   onChange={handleSelectAllClick}
                   inputProps={{ 'aria-label': 'select all positions' }}
                 />
@@ -427,7 +450,7 @@ export default function MyPositions() {
           </TableHead>
 
           <TableBody>
-            {allPositions.length === 0 ? (
+            {sortedPositions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} align="center">
                   <Typography sx={{ py: 3, color: 'var(--secondary-blue)' }}>
@@ -436,8 +459,8 @@ export default function MyPositions() {
                 </TableCell>
               </TableRow>
             ) : (
-              allPositions.map((row, index) => {
-                const isItemSelected = isSelected(row.symbol);
+              sortedPositions.map((row, index) => {
+                const isItemSelected = isSelected(row.positionId);
                 const labelId = `enhanced-table-checkbox-${index}`;
 
                 // Calculate percent change
@@ -448,11 +471,11 @@ export default function MyPositions() {
                 return (
                   <TableRow
                     hover
-                    onClick={(event) => handleSelectStock(event, row.symbol)}
+                    onClick={(event) => handleSelectStock(event, row.positionId)}
                     role="checkbox"
                     aria-checked={isItemSelected}
                     tabIndex={-1}
-                    key={row.symbol}
+                    key={row.positionId}
                     selected={isItemSelected}
                     sx={{
                       cursor: 'pointer',
