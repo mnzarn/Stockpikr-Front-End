@@ -1,25 +1,23 @@
-import { 
-  AppBar, 
-  Box, 
-  Button, 
-  Container, 
+import MenuIcon from '@mui/icons-material/Menu';
+import {
+  AppBar,
+  Box,
+  Button,
+  Container,
   Drawer,
   IconButton,
   List,
   ListItem,
   ListItemText,
-  Toolbar 
+  Toolbar
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LogoImage from '../../assets/images/logo-title-light-mode.png';
 import '../../index.css';
-import NavigationLogin from './NavigationLogin';
 import { UserApiService } from '../../services/UserApiService';
 import SearchBar from '../SearchBar';
-import NavigationAccount from './NavigationAccount';
-import NavigationSignin from './NavigationSignin';
+import NavigationLogin from './NavigationLogin';
 
 function NavigationHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -32,6 +30,14 @@ function NavigationHeader() {
     };
 
     checkUserLoggedIn();
+
+    // Listen for logout event to update UI
+    const handleUserLogout = () => setIsUserLoggedIn(false);
+    window.addEventListener("userLogout", handleUserLogout);
+
+    return () => {
+      window.removeEventListener("userLogout", handleUserLogout);
+    };
   }, []);
 
   const handleDrawerToggle = () => {

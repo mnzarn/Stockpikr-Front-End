@@ -4,8 +4,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Tooltip,
-  Typography
+  Tooltip
 } from '@mui/material';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
@@ -51,8 +50,15 @@ function NavigationAccount() {
 
   const handleLogout = async () => {
     try {
+      // Clear session-related data
       localStorage.removeItem('isLoggedIn');
-      window.location.href = '/StockPikr_Frontend/#/signin';
+      sessionStorage.clear();
+  
+      // Notify other components (like NavigationHeader) of logout
+      window.dispatchEvent(new Event("userLogout"));
+  
+      // Force a page reload to reset state and redirect to dashboard
+      window.location.href = '/StockPikr_Frontend/#/';
     } catch (error) {
       console.error('Error logging out:', error);
     }
