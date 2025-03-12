@@ -31,16 +31,16 @@ export const Account: React.FC = () => {
       const user = await UserApiService.fetchUserDetails();
       if (user) {
         setAccountValues({
-          firstName: user.firstName,
-          lastName: user.lastName,
+          firstName: user.displayName?.split(" ")[0] || "",
+          lastName: user.displayName?.split(" ")[1] || "",
           email: user.email,
-          phoneNumber: user.phoneNumber,
-          profilePic: user.profilePic
+          phoneNumber: user.phoneNumber || "",
+          profilePic: user.photoURL || ""
         });
       }
     };
     queryUserInfo();
-  }, []);
+  }, []);  
 
   return (
     <Paper
