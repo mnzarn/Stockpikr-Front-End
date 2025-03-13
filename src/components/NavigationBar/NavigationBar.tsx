@@ -1,25 +1,26 @@
-import { 
-  AppBar, 
-  Box, 
-  Button, 
-  Container, 
+import MenuIcon from '@mui/icons-material/Menu';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import Badge from '@mui/material/Badge';
+
+import {
+  AppBar,
+  Box,
+  Button,
+  Container,
   Drawer,
   IconButton,
   List,
   ListItem,
   ListItemText,
-  Toolbar 
+  Toolbar
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LogoImage from '../../assets/images/logo-title-light-mode.png';
 import '../../index.css';
-import NavigationLogin from './NavigationLogin';
 import { UserApiService } from '../../services/UserApiService';
 import SearchBar from '../SearchBar';
-import NavigationAccount from './NavigationAccount';
-import NavigationSignin from './NavigationSignin';
+import NavigationLogin from './NavigationLogin';
 
 function NavigationHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -209,7 +210,6 @@ function NavigationHeader() {
                   </Button>
                 ))}
               </Box>
-              
               {/* Login/Account section with search bar aligned to the right */}
               <Box sx={{ 
                 display: 'flex',
@@ -219,6 +219,27 @@ function NavigationHeader() {
                 height: '100%'
               }}>
                 <NavigationLogin />
+                {/* Notifications button with Badge showing current notifications */}
+                <IconButton 
+                  component={Link} 
+                  to="/notifications" 
+                  sx={{ 
+                    color: "var(--text-color)",
+                    "& svg": { fontSize: 32 },
+                  }}
+                >
+                  <Badge 
+                    badgeContent={3} // Replace with dynamic count
+                    color="error"
+                    overlap="circular"
+                    anchorOrigin={{
+                      vertical: "top",
+                      horizontal: "right",
+                    }}
+                  >
+                    <NotificationsIcon />
+                  </Badge>
+                </IconButton>
               </Box>
             </Box>
           </Toolbar>
