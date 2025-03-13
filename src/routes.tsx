@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import Dashboard from './components/Dashboard/Dashboard';
 import LandingPage from './components/LandingPage';
 import Positions from './components/Positions/Positions';
+import SignedOutPositions from './components/Positions/SignedOutPositions';
 import Settings from './components/Settings/Settings';
 import SignIn from './components/SignIn';
 import { StockQuotePage } from './components/Stock/StockQuotePage';
@@ -30,8 +31,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ signedInComponent: Sign
     checkUserLoggedIn();
   }, []);
 
-  if (isLoading) return <div>Loading...</div>;
-
   return isUserLoggedIn ? <SignedIn /> : <SignedOut />;
 };
 
@@ -40,7 +39,7 @@ const routes = () => (
     <Route path="/" element={<LandingPage />} />
     <Route path="/watchlist" element={<Watchlist />} />
     <Route path="/dashboard" element={<Dashboard />} />
-    <Route path="/positions" element={<Positions />} />
+    <Route path="/positions" element={<ProtectedRoute signedInComponent={Positions} signedOutComponent={SignedOutPositions} />} />
     <Route path="/settings" element={<Settings />} />
     <Route path="/signin" element={<SignIn />} />
     <Route path="/swaggerDocs" element={<SwaggerDocs />} />

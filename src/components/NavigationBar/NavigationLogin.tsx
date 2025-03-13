@@ -4,6 +4,7 @@ import { UserApiService } from '../../services/UserApiService';
 import SearchBar from '../SearchBar';
 import NavigationAccount from './NavigationAccount';
 import NavigationSignin from './NavigationSignin';
+import { Box } from '@mui/material';
 
 const NavigationLogin: React.FC = () => {
   const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean | null>(null); // Null = Loading state
@@ -33,9 +34,14 @@ const NavigationLogin: React.FC = () => {
   return (
     <>
       {isUserLoggedIn ? (
-        <>
-          <SearchBar /> <NavigationAccount />
-        </>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          height: '100%'
+        }}>
+          <SearchBar />
+          <NavigationAccount />
+        </Box>
       ) : (
         <NavigationSignin />
       )}

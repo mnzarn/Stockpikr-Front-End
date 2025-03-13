@@ -1,4 +1,4 @@
-import { ClickAwayListener } from '@mui/material';
+import { ClickAwayListener, useMediaQuery, useTheme } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import React, { useRef, useState } from 'react';
@@ -14,6 +14,8 @@ const SearchBar: React.FC = () => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const throwError = useAsyncError();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleOnChangeTextField = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -77,7 +79,7 @@ const SearchBar: React.FC = () => {
   };
 
   return (
-    <div style={{ margin: '20px' }}>
+    <div style={{ margin: isMobile ? '10px 0' : '0 10px' }}>
       <ClickAwayListener onClickAway={handleClose}>
         <Autocomplete
           options={searchOptions}
@@ -89,8 +91,14 @@ const SearchBar: React.FC = () => {
               {...params}
               onKeyDown={handleEnterPress}
               placeholder="Search by symbol or name"
-              style={{ marginRight: '10px' }}
+              size="small"
               onChange={handleOnChangeTextField}
+              sx={{ 
+                '& .MuiInputBase-root': {
+                  height: '36px', // Compact height
+                  fontSize: '0.9rem' // Slightly smaller font
+                }
+              }}
             />
           )}
           renderOption={(props, option) => (
@@ -98,21 +106,25 @@ const SearchBar: React.FC = () => {
               {...props}
               style={{
                 display: 'flex',
-                fontSize: '15px',
-                alignItems: 'center'
+                fontSize: '14px', // Smaller font
+                alignItems: 'center',
+                padding: '4px 8px' // Reduced padding
               }}
             >
-              <strong style={{ width: '150px', textAlign: 'left' }}>{option.symbol}</strong>
-              <span style={{ flex: 1, marginLeft: '10px', marginRight: '10px' }}>{option.name}</span>
-              <em style={{ width: '150px', textAlign: 'right' }}>{option.exchange}</em>
+              <strong style={{ width: '80px', textAlign: 'left' }}>{option.symbol}</strong>
+              <span style={{ flex: 1, marginLeft: '10px', marginRight: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{option.name}</span>
+              <em style={{ width: '100px', textAlign: 'right', fontSize: '12px' }}>{option.exchange}</em>
             </li>
           )}
           sx={{
             backgroundColor: 'white',
-            width: '700px',
-            borderRadius: 3,
+            width: { xs: '100%', sm: '250px', md: '300px' }, // Slightly narrower
+            borderRadius: 2,
             '& li': {
               width: 'auto'
+            },
+            '& .MuiAutocomplete-inputRoot': {
+              padding: '2px 8px !important' // Reduced padding
             }
           }}
         />

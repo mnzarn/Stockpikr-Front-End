@@ -17,6 +17,10 @@ export type CustomTickerData = {
   yearHighVsCurrentPercentage: number;
   nearLowVsCurrentPercentage: number;
   yearLowVsCurrentPercentage: number;
+  fiveYearLowVsCurrentPercentage: number;
+  fiveYearHighVsCurrentPercentage: number;
+  fiveYearLow: number;
+  fiveYearHigh: number;
 };
 
 export type AlertData = { [symbol: string]: number };

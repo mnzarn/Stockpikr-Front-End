@@ -1,20 +1,41 @@
-import { AppBar, Box, Button, Container, Menu, MenuItem, Toolbar } from '@mui/material';
-import { useState } from 'react';
+import { 
+  AppBar, 
+  Box, 
+  Button, 
+  Container, 
+  Drawer,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Toolbar 
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LogoImage from '../../assets/images/logo-title-light-mode.png';
 import '../../index.css';
 import NavigationLogin from './NavigationLogin';
+import { UserApiService } from '../../services/UserApiService';
+import SearchBar from '../SearchBar';
+import NavigationAccount from './NavigationAccount';
+import NavigationSignin from './NavigationSignin';
 
 function NavigationHeader() {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
 
-  const handleSettingsHover = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+  useEffect(() => {
+    const checkUserLoggedIn = async () => {
+      const loggedIn = await UserApiService.isUserLoggedIn();
+      setIsUserLoggedIn(loggedIn);
+    };
 
-  const handleMenuLeave = () => {
-    setAnchorEl(null);
+    checkUserLoggedIn();
+  }, []);
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
   };
 
   const navButtonStyle = {
@@ -22,11 +43,12 @@ function NavigationHeader() {
     color: 'var(--text-color)',
     textDecoration: 'none',
     borderRadius: '20px',
-    padding: '10px 20px',
+    padding: '8px 16px',  // Reduced padding
     fontWeight: 'bold',
     fontFamily: 'var(--font-family)',
     border: `2px var(--text-color) solid`,
-    margin: '5px',
+    margin: '0 3px',  // Reduced margin
+    fontSize: '0.9rem', // Slightly smaller font
     transition: 'all 0.3s ease',
     '&:hover': {
       backgroundColor: 'var(--settings-bg-color)',
@@ -38,12 +60,62 @@ function NavigationHeader() {
     }
   };
 
-  const menuItems = [
-    { name: 'Account', path: '../../settings', section: 'Account' },
-    { name: 'Notifications', path: '../../settings', section: 'Notifications' },
-    { name: 'Security', path: '../../settings', section: 'Security' },
-    { name: 'Help', path: '../../settings', section: 'Help' }
+  const navItems = [
+    { name: 'Dashboard', path: '/dashboard' },
+    { name: 'Watchlist', path: '/watchlist' },
+    { name: 'Positions', path: '/positions' }
   ];
+
+  // Mobile drawer content
+  const drawer = (
+    <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
+      <Box
+        component={Link}
+        to="/"
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '10px 0',
+          textDecoration: 'none'
+        }}
+      >
+        <img
+          src={LogoImage}
+          alt="Logo"
+          style={{
+            height: '40px',
+            borderRadius: '10px'
+          }}
+        />
+      </Box>
+      
+      {isUserLoggedIn && (
+        <Box sx={{ px: 2, py: 1 }}>
+          <SearchBar />
+        </Box>
+      )}
+      
+      <List>
+        {navItems.map((item) => (
+          <ListItem 
+            key={item.name} 
+            component={Link} 
+            to={item.path}
+            sx={{
+              textAlign: 'center',
+              padding: '10px',
+              color: 'var(--primary-blue)',
+              fontFamily: 'var(--font-family)',
+              fontWeight: 'bold',
+              textDecoration: 'none'
+            }}
+          >
+            <ListItemText primary={item.name} />
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
 
   return (
     <>
@@ -53,19 +125,22 @@ function NavigationHeader() {
           backgroundColor: 'var(--navbar-bg-color)',
           fontFamily: 'var(--font-family)',
           zIndex: (theme) => theme.zIndex.drawer + 1,
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          height: '64px' // Fixed height for sleek appearance
         }}
       >
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" sx={{ height: '100%' }}>
           <Toolbar
             disableGutters
             sx={{
               display: 'flex',
-              justifyContent: 'space-between',
               alignItems: 'center',
-              padding: '0.5rem 0'
+              padding: '0', // Remove padding
+              minHeight: '64px !important', // Override Material-UI default
+              height: '100%'
             }}
           >
+            {/* Logo - visible on all screen sizes */}
             <Box
               component={Link}
               to="/"
@@ -73,6 +148,7 @@ function NavigationHeader() {
                 textDecoration: 'none',
                 display: 'flex',
                 alignItems: 'center',
+                mr: 2,
                 '&:hover img': {
                   transform: 'scale(1.05)'
                 }
@@ -82,7 +158,7 @@ function NavigationHeader() {
                 src={LogoImage}
                 alt="Logo"
                 style={{
-                  height: '50px',
+                  height: '40px', // Smaller logo
                   marginRight: '10px',
                   borderRadius: '10px',
                   transition: 'transform 0.3s ease'
@@ -90,88 +166,86 @@ function NavigationHeader() {
               />
             </Box>
 
-            <Box
-              sx={{
-                display: 'flex',
-                gap: '10px',
-                flex: 1,
-                justifyContent: 'center'
+            {/* Mobile menu button - only visible on mobile */}
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ 
+                display: { xs: 'flex', md: 'none' },
+                marginLeft: 'auto'
               }}
             >
-              <Button variant="contained" component={Link} to="../..//dashboard/" sx={navButtonStyle}>
-                Dashboard
-              </Button>
-              <Button variant="contained" component={Link} to="../..//watchlist" sx={navButtonStyle}>
-                Watchlist
-              </Button>
-              <Button variant="contained" component={Link} to="../..//positions" sx={navButtonStyle}>
-                Positions
-              </Button>
-            </Box>
+              <MenuIcon />
+            </IconButton>
 
-            <Box
-              sx={{
+            {/* Desktop view - properly aligned sections */}
+            <Box sx={{ 
+              display: { xs: 'none', md: 'flex' },
+              width: '100%',
+              alignItems: 'center',
+              height: '100%'
+            }}>
+              {/* Center navigation buttons */}
+              <Box sx={{ 
                 display: 'flex',
+                justifyContent: 'center',
                 alignItems: 'center',
-                gap: '10px'
-              }}
-            >
-              <Button
-                variant="contained"
-                component={Link}
-                to="/settings"
-                onMouseOver={handleSettingsHover}
-                sx={navButtonStyle}
-              >
-                ⚙️ Settings
-              </Button>
-              <Menu
-                id="settings-menu"
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleMenuLeave}
-                MenuListProps={{
-                  onMouseLeave: handleMenuLeave
-                }}
-                sx={{
-                  pointerEvents: 'auto',
-                  '& .MuiPaper-root': {
-                    backgroundColor: 'var(--navbar-bg-color)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '10px',
-                    marginTop: '8px'
-                  }
-                }}
-                PaperProps={{
-                  onMouseLeave: handleMenuLeave
-                }}
-              >
-                {menuItems.map((item) => (
-                  <MenuItem
+                gap: '5px', // Reduced gap
+                flex: '0 0 auto',
+                margin: '0 auto',
+                height: '100%'
+              }}>
+                {navItems.map((item) => (
+                  <Button 
                     key={item.name}
-                    component={Link}
-                    to={item.path}
-                    state={{ section: item.section }}
-                    onClick={handleMenuLeave}
-                    sx={{
-                      color: 'var(--text-color)',
-                      fontFamily: 'var(--font-family)',
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        backgroundColor: 'var(--settings-bg-color)'
-                      }
-                    }}
+                    variant="contained" 
+                    component={Link} 
+                    to={item.path} 
+                    sx={navButtonStyle}
                   >
                     {item.name}
-                  </MenuItem>
+                  </Button>
                 ))}
-              </Menu>
-              <NavigationLogin />
+              </Box>
+              
+              {/* Login/Account section with search bar aligned to the right */}
+              <Box sx={{ 
+                display: 'flex',
+                alignItems: 'center',
+                marginLeft: 'auto',
+                flexShrink: 0,
+                height: '100%'
+              }}>
+                <NavigationLogin />
+              </Box>
             </Box>
           </Toolbar>
         </Container>
       </AppBar>
-      <Toolbar />
+
+      {/* Mobile navigation drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true // Better open performance on mobile
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': { 
+            boxSizing: 'border-box', 
+            width: 280,
+            backgroundColor: 'var(--main-bg-color)'
+          },
+        }}
+      >
+        {drawer}
+      </Drawer>
+      
+      <Toolbar sx={{ minHeight: '64px !important' }} /> {/* Adjust spacing below navbar */}
     </>
   );
 }
