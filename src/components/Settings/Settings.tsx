@@ -15,16 +15,14 @@ import { Account } from './Drawer/Account';
 import { Appearance } from './Drawer/Appearance';
 import { Help } from './Drawer/Help';
 import { Notifications } from './Drawer/Notifications';
-import { Security } from './Drawer/Security';
 
 const drawerWidth = 280;
-const drawingContents = ['Account', 'Notifications', 'Security', 'Help'];
+const drawingContents = ['Account', 'Notifications', 'Help'];
 const defaultSettingView = 'Account';
 
 const componentMapping: Record<string, React.ComponentType<any>> = {
   Account: Account,
   Notifications: Notifications,
-  Security: Security,
   Appearance: Appearance,
   Help: Help
 };

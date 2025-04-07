@@ -70,17 +70,17 @@ function NavigationAccount() {
       console.log(user);
       if (user) {
         setUserInfo({
-          firstName: user.firstName,
-          lastName: user.lastName,
+          firstName: user.displayName?.split(" ")[0] || "",
+          lastName: user.displayName?.split(" ")[1] || "",
           email: user.email,
-          phoneNumber: user.phoneNumber,
-          profilePic: user.profilePic
+          phoneNumber: user.phoneNumber || "",
+          profilePic: user.photoURL || ""
         });
       }
     };
     queryUserInfo();
-    console.log("userInfo?.profilePic")
-    console.log(userInfo?.profilePic)
+    // console.log("userInfo?.profilePic")
+    // console.log(userInfo?.profilePic)
   }, []);
 
   return (
