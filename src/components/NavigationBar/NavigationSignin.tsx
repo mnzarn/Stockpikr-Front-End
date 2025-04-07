@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom';
 import '../../index.css';
 
 function NavigationSignin() {
-  const handleLogin = () => {
+  /*const handleLogin = () => {
     localStorage.setItem('isLoggedIn', 'true');
-  };
+    window.dispatchEvent(new Event("userLogin"));
+  };*/
 
   const signInButtonStyle = {
     backgroundColor: 'var(--navbar-bg-color)',
@@ -52,7 +53,10 @@ function NavigationSignin() {
         justifyContent: 'flex-end'
       }}
     >
-      <Button variant="contained" onClick={handleLogin} component={Link} to="/signin" sx={signInButtonStyle}>
+      {/*<Button variant="contained" onClick={handleLogin} component={Link} to="/signin" sx={signInButtonStyle}>
+        Sign In
+      </Button>*/}
+      <Button variant="contained" component={Link} to="/signin" sx={signInButtonStyle}>
         Sign In
       </Button>
     </Box>
