@@ -6,9 +6,11 @@ import {
   MenuItem,
   Tooltip
 } from '@mui/material';
+import { signOut } from 'firebase/auth';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import '../../index.css';
+import { auth } from '../../services/FirebaseConfig';
 import { UserApiService } from '../../services/UserApiService';
 
 // Comment out the pages array as these links are already in NavigationBar
@@ -50,10 +52,23 @@ function NavigationAccount() {
 
   const handleLogout = async () => {
     try {
+      console.log("🚨 Logging out...");
+
+      // Clear session-related data
       localStorage.removeItem('isLoggedIn');
-      window.location.href = '/StockPikr_Frontend/#/signin';
+      sessionStorage.clear();
+
+      // Sign out from Firebase too
+      await signOut(auth);
+      console.log("✅ Firebase signOut successful");
+  
+      // Notify other components (like NavigationHeader) of logout
+      window.dispatchEvent(new Event("userLogout"));
+  
+      // Force a page reload to reset state and redirect to dashboard
+      window.location.href = '/#/dashboard';
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error('❌ Error logging out:', error);
     }
   };
 
@@ -71,9 +86,17 @@ function NavigationAccount() {
         });
       }
     };
-    queryUserInfo();
+    // queryUserInfo();
     // console.log("userInfo?.profilePic")
     // console.log(userInfo?.profilePic)
+
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        queryUserInfo();
+      }
+    });
+  
+    return () => unsubscribe();
   }, []);
 
   return (

@@ -3,39 +3,68 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import Badge from '@mui/material/Badge';
 import { useNotificationContext } from "../Notifications/NotificationsContext";
 
-import
-  {
-    AppBar,
-    Box,
-    Button,
-    Container,
-    Drawer,
-    IconButton,
-    List,
-    ListItem,
-    ListItemText,
-    Toolbar
-  } from '@mui/material';
+import {
+  AppBar,
+  Box,
+  Button,
+  Container,
+  Drawer,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Toolbar
+} from '@mui/material';
+import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LogoImage from '../../assets/images/logo-title-light-mode.png';
 import '../../index.css';
-import { UserApiService } from '../../services/UserApiService';
+import { auth } from "../../services/FirebaseConfig";
 import SearchBar from '../SearchBar';
-import NavigationLogin from './NavigationLogin';
 
 function NavigationHeader() {
   const { notificationCount } = useNotificationContext();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
 
-  useEffect(() => {
+  // local storage
+  /*useEffect(() => {
     const checkUserLoggedIn = async () => {
       const loggedIn = await UserApiService.isUserLoggedIn();
       setIsUserLoggedIn(loggedIn);
     };
 
     checkUserLoggedIn();
+
+    // Listen for logout event to update UI
+    const handleUserLogout = () => setIsUserLoggedIn(false);
+    const handleUserLogin = () => setIsUserLoggedIn(true);
+
+    window.addEventListener("userLogout", handleUserLogout);
+    window.addEventListener("userLogin", handleUserLogin);
+
+    return () => {
+      window.removeEventListener("userLogout", handleUserLogout);
+      window.removeEventListener("userLogin", handleUserLogin);
+    };*/
+
+    // firebase auth state
+    useEffect(() => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        console.log("🔍 Firebase Auth State Changed:", user);
+
+        if (user) {
+          console.log("✅ User is logged in:", user.email);
+        } else {
+          console.log("🚪 User is logged out");
+        }
+
+        setIsUserLoggedIn(!!user); // true if logged in, false if not
+      });
+    
+      return () => unsubscribe();
+
   }, []);
 
   const handleDrawerToggle = () => {
@@ -220,8 +249,10 @@ function NavigationHeader() {
                 marginLeft: 'auto',
                 flexShrink: 0,
                 height: '100%'
-              }}>
-                <NavigationLogin />
+              }}
+              >
+                {isUserLoggedIn ? <NavigationAccount /> : <NavigationSignin />}
+                {/*<NavigationLogin />*/}
                 {/* Notifications button with Badge showing current notifications */}
                 <IconButton 
                   component={Link} 
