@@ -66,7 +66,7 @@ function NavigationAccount() {
       window.dispatchEvent(new Event("userLogout"));
   
       // Force a page reload to reset state and redirect to dashboard
-      window.location.href = '/StockPikr_Frontend/#/';
+      window.location.href = '/#/dashboard';
     } catch (error) {
       console.error('❌ Error logging out:', error);
     }
