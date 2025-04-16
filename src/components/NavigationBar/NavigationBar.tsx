@@ -1,19 +1,21 @@
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import Badge from '@mui/material/Badge';
+import { useNotificationContext } from "../Notifications/NotificationsContext";
 
-import {
-  AppBar,
-  Box,
-  Button,
-  Container,
-  Drawer,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  Toolbar
-} from '@mui/material';
+import
+  {
+    AppBar,
+    Box,
+    Button,
+    Container,
+    Drawer,
+    IconButton,
+    List,
+    ListItem,
+    ListItemText,
+    Toolbar
+  } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LogoImage from '../../assets/images/logo-title-light-mode.png';
@@ -23,6 +25,7 @@ import SearchBar from '../SearchBar';
 import NavigationLogin from './NavigationLogin';
 
 function NavigationHeader() {
+  const { notificationCount } = useNotificationContext();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
 
@@ -229,7 +232,7 @@ function NavigationHeader() {
                   }}
                 >
                   <Badge 
-                    badgeContent={3} // Replace with dynamic count
+                    badgeContent={notificationCount} 
                     color="error"
                     overlap="circular"
                     anchorOrigin={{

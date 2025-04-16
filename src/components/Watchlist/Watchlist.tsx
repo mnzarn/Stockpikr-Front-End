@@ -3,6 +3,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import InfoIcon from '@mui/icons-material/Info';
+import { default as NotificationsIcon, default as NotificationsNoneIcon } from '@mui/icons-material/NotificationsNone';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -595,24 +596,28 @@ export default function Watchlist() {
     return true;
   };
 
-  function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
-    if (b[orderBy] < a[orderBy]) {
-      return -1;
-    }
-    if (b[orderBy] > a[orderBy]) {
-      return 1;
-    }
-    return 0;
-  }
-
-  function getComparator<Key extends keyof any>(
+  function getComparator(
     order: Order,
-    orderBy: Key
-  ): (a: { [key in Key]: number | string }, b: { [key in Key]: number | string }) => number {
+    orderBy: keyof WatchlistTicker
+  ): (a: WatchlistTicker, b: WatchlistTicker) => number {
     return order === 'desc'
       ? (a, b) => descendingComparator(a, b, orderBy)
       : (a, b) => -descendingComparator(a, b, orderBy);
   }
+  
+  function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
+    const valA = a[orderBy];
+    const valB = b[orderBy];
+  
+    // Handle undefined safely
+    if (valA == null && valB == null) return 0;
+    if (valA == null) return 1;
+    if (valB == null) return -1;
+  
+    if (valB < valA) return -1;
+    if (valB > valA) return 1;
+    return 0;
+  }  
 
   // Handle sort order change
   const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof WatchlistTicker) => {
@@ -772,7 +777,7 @@ export default function Watchlist() {
     selected.forEach((symbol) => {
       const ticker = watchLists[wlKey].find((t) => t.symbol === symbol);
       if (ticker) {
-        initialValues[symbol] = String(ticker.alertPrice != null ? ticker.alertPrice.toFixed(2) : '0.00');
+        initialValues[symbol] = ticker.alertPrice != null ? String(ticker.alertPrice.toFixed(2)) : '';
       }
     });
     setEditingValues(initialValues);
@@ -1047,7 +1052,32 @@ export default function Watchlist() {
               <TableCell padding="checkbox">
                 <Checkbox color="primary" checked={isItemSelected} inputProps={{ 'aria-labelledby': labelId }} />
               </TableCell>
-    
+
+              <TableCell align="center" padding='none'>
+              {row.alertPrice != null ? (
+                <Tooltip title="Alert price set">
+                  <NotificationsIcon
+                    sx={{
+                      color: 'white',
+                      backgroundColor: 'var(--primary-blue)',
+                      borderRadius: '50%',
+                      padding: '4px',
+                      fontSize: '20px'
+                    }}
+                  />
+                </Tooltip>
+              ) : (
+                <Tooltip title="No alert price">
+                  <NotificationsNoneIcon
+                    sx={{
+                      color: 'var(--primary-blue)',
+                      fontSize: '20px'
+                    }}
+                  />
+                </Tooltip>
+              )}
+            </TableCell>
+
               {/* Symbol with hover details - always visible */}
               <TableCell>
                 <Tooltip
@@ -1148,12 +1178,31 @@ export default function Watchlist() {
                   <Box
                     sx={{
                       display: 'inline-block',
-                      minWidth: '80px',
+                      minWidth: '100px',
                       p: '4px 8px',
-                      borderRadius: '4px'
+                      borderRadius: '4px',
+                      color: row.alertPrice == null ? 'var(--secondary-blue)' : 'inherit',
+                      fontStyle: 'normal',
+                      cursor: row.alertPrice == null ? 'pointer' : 'default',
+                      textAlign: 'center'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!editMode && row.alertPrice == null) {
+                        setSelected([row.symbol]);
+                        handleEnterEditMode();
+                      }
                     }}
                   >
-                    ${row.alertPrice != null ? row.alertPrice.toFixed(2) : '0.00'}
+                    {row.alertPrice != null ? (
+                      `$${row.alertPrice.toFixed(2)}`
+                    ) : (
+                      <>
+                        No price set
+                        <br />
+                        <span style={{ fontWeight: 500 }}>click to add</span>
+                      </>
+                    )}
                   </Box>
                 )}
               </TableCell>
