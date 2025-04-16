@@ -22,6 +22,8 @@ import LogoImage from '../../assets/images/logo-title-light-mode.png';
 import '../../index.css';
 import { auth } from "../../services/FirebaseConfig";
 import SearchBar from '../SearchBar';
+import NavigationAccount from './NavigationAccount';
+import NavigationSignin from './NavigationSignin';
 
 function NavigationHeader() {
   const { notificationCount } = useNotificationContext();
