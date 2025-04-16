@@ -1,4 +1,8 @@
 import MenuIcon from '@mui/icons-material/Menu';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import Badge from '@mui/material/Badge';
+import { useNotificationContext } from "../Notifications/NotificationsContext";
+
 import {
   AppBar,
   Box,
@@ -22,6 +26,7 @@ import NavigationAccount from './NavigationAccount';
 import NavigationSignin from './NavigationSignin';
 
 function NavigationHeader() {
+  const { notificationCount } = useNotificationContext();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
 
@@ -239,7 +244,6 @@ function NavigationHeader() {
                   </Button>
                 ))}
               </Box>
-              
               {/* Login/Account section with search bar aligned to the right */}
               <Box sx={{ 
                 display: 'flex',
@@ -251,6 +255,27 @@ function NavigationHeader() {
               >
                 {isUserLoggedIn ? <NavigationAccount /> : <NavigationSignin />}
                 {/*<NavigationLogin />*/}
+                {/* Notifications button with Badge showing current notifications */}
+                <IconButton 
+                  component={Link} 
+                  to="/notifications" 
+                  sx={{ 
+                    color: "var(--text-color)",
+                    "& svg": { fontSize: 32 },
+                  }}
+                >
+                  <Badge 
+                    badgeContent={notificationCount} 
+                    color="error"
+                    overlap="circular"
+                    anchorOrigin={{
+                      vertical: "top",
+                      horizontal: "right",
+                    }}
+                  >
+                    <NotificationsIcon />
+                  </Badge>
+                </IconButton>
               </Box>
             </Box>
           </Toolbar>

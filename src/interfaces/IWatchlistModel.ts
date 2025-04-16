@@ -8,7 +8,7 @@ export interface IWatchlistModel {
 
 export type MinimalWatchlistTicker = {
   symbol: string;
-  alertPrice: number;
+  alertPrice?: number;
 };
 
 export type CustomTickerData = {
@@ -23,7 +23,7 @@ export type CustomTickerData = {
   fiveYearHigh: number;
 };
 
-export type AlertData = { [symbol: string]: number };
+export type AlertData = { [symbol: string]: number | undefined };
 
 export type WatchlistTicker = MinimalWatchlistTicker & IStockQuote & CustomTickerData;
 

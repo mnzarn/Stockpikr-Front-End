@@ -76,8 +76,8 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
     const cleanedPrice = price.trim().endsWith('.') ? price.trim() + '0' : price.trim();
 
     if (!cleanedPrice) {
-      setPriceError('Alert price cannot be empty');
-      return false;
+      setPriceError('');
+      return true; 
     }
 
     // More permissive pattern for validation on blur/submit
@@ -134,7 +134,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
       const targetWatchlist = watchlistName ?? wlKey;
       const ticker: MinimalWatchlistTicker = {
         symbol: addStockSymbol,
-        alertPrice: parseFloat(addStockPrice)
+        alertPrice: addStockPrice ? parseFloat(addStockPrice) : undefined
       };
 
       const searchResult = await StockApiService.fetchDetailedStock(ticker.symbol);
@@ -401,7 +401,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
         <Button
           variant="contained"
           onClick={onConfirmAddStockDialog}
-          disabled={!addStockSymbol || !addStockPrice || (!watchlistName && !wlKey) || !!priceError}
+          disabled={!addStockSymbol || (!watchlistName && !wlKey) || !!priceError}
           sx={{
             bgcolor: 'var(--primary-blue)',
             textTransform: 'none',
