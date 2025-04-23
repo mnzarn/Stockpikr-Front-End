@@ -8,40 +8,42 @@ export interface IWatchlistModel {
 
 export type MinimalWatchlistTicker = {
   symbol: string;
-  alertPrice: number | null; // Changed to allow null values
+  alertPrice: number | null;
 };
 
 export type CustomTickerData = {
+  // Existing percentage fields
   currentVsAlertPricePercentage: number | null;
   nearHighVsCurrentPercentage: number | null;
   yearHighVsCurrentPercentage: number | null;
   nearLowVsCurrentPercentage: number | null;
   yearLowVsCurrentPercentage: number | null;
-  // Add the five year percentage properties
-  fiveYearHighVsCurrentPercentage: number | null;
   fiveYearLowVsCurrentPercentage: number | null;
-};
+  fiveYearHighVsCurrentPercentage: number | null;
 
-// Add timeframe related properties
-export interface TimeframeData {
-  // 90-day timeframe
+  // Existing high/low fields
+  fiveYearLow: number | null;
+  fiveYearHigh: number | null;
+
+  // New timeframe fields
   ninetyDayHigh: number | null;
   ninetyDayLow: number | null;
-
-  // 180-day timeframe
   oneEightyDayHigh: number | null;
   oneEightyDayLow: number | null;
-
-  // 3-year timeframe
   threeYearHigh: number | null;
   threeYearLow: number | null;
 
-  // 5-year timeframe (fiveYearHigh and fiveYearLow should be in IStockQuote)
-}
+  // New timeframe percentage fields
+  ninetyDayHighVsCurrentPercentage: number | null;
+  ninetyDayLowVsCurrentPercentage: number | null;
+  oneEightyDayHighVsCurrentPercentage: number | null;
+  oneEightyDayLowVsCurrentPercentage: number | null;
+  threeYearHighVsCurrentPercentage: number | null;
+  threeYearLowVsCurrentPercentage: number | null;
+};
 
-export type AlertData = { [symbol: string]: number | null }; // Changed to allow null values
+export type AlertData = { [symbol: string]: number | null };
 
-// Update to include the TimeframeData interface
-export type WatchlistTicker = MinimalWatchlistTicker & IStockQuote & CustomTickerData & TimeframeData;
+export type WatchlistTicker = MinimalWatchlistTicker & IStockQuote & CustomTickerData;
 
 export type Watchlists = { [key: string]: WatchlistTicker[] };
