@@ -2,16 +2,18 @@ import { HashRouter as Router } from 'react-router-dom';
 import './App.css';
 import ErrorBoundary from './components/GlobalErrorBoundary';
 import NavigationHeader from './components/NavigationBar/NavigationBar';
+import DailyPopup from "./components/Notifications/DailyPopup";
 import { NotificationProvider } from "./components/Notifications/NotificationsContext";
 import routes from './routes';
 
 function App() {
   return (
     <ErrorBoundary>
-      <NotificationProvider> {/* Wrap the whole app to provide notification context */}
+      <NotificationProvider>
         <Router basename="/">
           <div className="App">
             <NavigationHeader />
+            <DailyPopup />
             {routes()}
           </div>
         </Router>
