@@ -112,6 +112,7 @@ export default function MyPositions() {
   const [isAddStockDialog, setAddStockDialog] = useState(false);
   const [addStockSymbol, setAddStockSymbol] = useState('');
   const [stockInfo, setStockInfo] = useState<IStockQuote>();
+  const [portfolioName, setPortfolioName] = useState<string>('');
   const throwError = useAsyncError();
 
   // Generate a unique ID for each position to use for selection
@@ -121,7 +122,8 @@ export default function MyPositions() {
 
   const isSelected = (positionId: string) => selected.indexOf(positionId) !== -1;
 
-  const fetchStockData = async (symbol: string): Promise<void> => {
+  // Fetch stock data and immediately open dialog
+  const fetchStockDataAndOpenDialog = async (symbol: string): Promise<void> => {
     if (!symbol) return;
 
     try {
@@ -130,14 +132,16 @@ export default function MyPositions() {
         return;
       }
       setStockInfo(response);
+      setAddStockDialog(true); // Open dialog as soon as stock data is fetched
     } catch (error) {
       console.error('Error fetching stock data:', error);
     }
   };
 
+  // When addStockSymbol changes, fetch data and open dialog
   useEffect(() => {
     if (addStockSymbol) {
-      fetchStockData(addStockSymbol);
+      fetchStockDataAndOpenDialog(addStockSymbol);
     }
   }, [addStockSymbol]);
 
@@ -208,8 +212,10 @@ export default function MyPositions() {
   const queryPurchasedStocks = async () => {
     try {
       const wls = await PositionsApiService.fetchPurchasedStocksByUserId();
+      const userID = await getUserID();
+      setPortfolioName(userID); // Set portfolio name to userID
+      
       const updatedPositions: { [key: string]: PositionTickers[] } = {};
-      const userID: string = await getUserID();
       updatedPositions[userID] = wls.flatMap((positions) => positions.tickers);
       setPositions(updatedPositions);
     } catch (error) {
@@ -235,6 +241,12 @@ export default function MyPositions() {
       newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
     }
     setSelected(newSelected);
+  };
+
+  // Handle closing the add position dialog
+  const handleCloseAddStockDialog = () => {
+    setAddStockDialog(false);
+    setAddStockSymbol(''); // Clear the symbol when dialog closes
   };
 
   // Format currency values consistently
@@ -371,11 +383,7 @@ export default function MyPositions() {
           <Box display="inline-flex" alignItems="center">
             <WatchlistTickersSearchBar
               setAddStockSymbol={setAddStockSymbol}
-              onSelectStock={() => {
-                if (addStockSymbol) {
-                  setAddStockDialog(true);
-                }
-              }}
+              onSelectStock={() => {}} // No need for this since the useEffect will handle it
             />
           </Box>
         </Box>
@@ -560,12 +568,14 @@ export default function MyPositions() {
         </Table>
       </Box>
 
+      {/* Add Position Dialog with portfolio name */}
       <AddPositionDialog
         positions={positions}
         setPositions={setPositions}
         addStockSymbol={addStockSymbol}
         isAddStockDialog={isAddStockDialog}
-        setAddStockDialog={setAddStockDialog}
+        setAddStockDialog={handleCloseAddStockDialog}
+        portfolioName={portfolioName} // Pass the portfolioName prop
       />
     </TableContainer>
   );
