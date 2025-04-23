@@ -33,7 +33,7 @@ interface AddStockDialogProps {
   setAddStockDialog: (value: boolean) => void;
   watchlists: Watchlists | undefined;
   setWatchlists: (watchlists: Watchlists) => void;
-  onClose?: () => void; // Add optional onClose prop
+  onClose?: () => void; // Add optional onClose callback
 }
 
 const AddStockDialog: React.FC<AddStockDialogProps> = ({
@@ -45,22 +45,14 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
   setAddStockDialog,
   onClose
 }) => {
-  const [sellPrice, setSellPrice] = useState('');
+  const [addStockPrice, setAddStockPrice] = useState('');
   const [stockInfo, setStockInfo] = useState<IStockQuote>();
   const [stockTrackingDays, setStockTrackingDays] = useState(90);
   const [wlKey, setWlKey] = useState('');
-  const [sellPriceError, setSellPriceError] = useState('');
+  const [priceError, setPriceError] = useState('');
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const throwError = useAsyncError();
-
-  // Reset sellPrice when dialog opens with a new stock
-  useEffect(() => {
-    if (isAddStockDialog) {
-      setSellPrice('');
-      setSellPriceError('');
-    }
-  }, [isAddStockDialog, addStockSymbol]);
 
   // Fetch stock data when symbol changes
   useEffect(() => {
@@ -81,29 +73,29 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
     }
   };
 
-  const validateSellPrice = (price: string): boolean => {
+  const validatePrice = (price: string): boolean => {
     // First clean up the string (allow trailing decimal point for UX)
     const cleanedPrice = price.trim().endsWith('.') ? price.trim() + '0' : price.trim();
 
     if (!cleanedPrice) {
-      setSellPriceError('Sell price cannot be empty');
-      return false;
+      setPriceError('');
+      return true; 
     }
 
     // More permissive pattern for validation on blur/submit
     // This allows valid currency formats like 1, 1.5, 10.99
     if (!/^[0-9]+(\.[0-9]{0,2})?$/.test(cleanedPrice)) {
-      setSellPriceError('Enter a valid price (e.g., 10.99)');
+      setPriceError('Enter a valid price (e.g., 10.99)');
       return false;
     }
 
     const numValue = parseFloat(cleanedPrice);
     if (numValue <= 0) {
-      setSellPriceError('Price must be greater than 0');
+      setPriceError('Price must be greater than 0');
       return false;
     }
 
-    setSellPriceError('');
+    setPriceError('');
     return true;
   };
 
@@ -112,17 +104,18 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
     // Allow typing decimals more freely
     // This regex allows input like "10." during typing
     if (newPrice === '' || /^[0-9]*\.?[0-9]*$/.test(newPrice)) {
-      setSellPrice(newPrice);
+      setAddStockPrice(newPrice);
       // Don't validate during typing - wait for blur or submit
     }
   };
 
   const onCancelAddStockDialog = () => {
-    setSellPrice('');
-    setSellPriceError('');
+    setAddStockPrice('');
+    setPriceError('');
     setStockTrackingDays(90);
     setAddStockDialog(false);
-    // Call onClose if provided
+    
+    // Call the onClose callback if provided
     if (onClose) {
       onClose();
     }
@@ -131,7 +124,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
   const onConfirmAddStockDialog = async () => {
     try {
       // Validate all inputs
-      if (!validateSellPrice(sellPrice)) {
+      if (!validatePrice(addStockPrice)) {
         return;
       }
 
@@ -148,7 +141,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
       const targetWatchlist = watchlistName ?? wlKey;
       const ticker: MinimalWatchlistTicker = {
         symbol: addStockSymbol,
-        alertPrice: sellPrice ? parseFloat(sellPrice) : null
+        alertPrice: addStockPrice ? parseFloat(addStockPrice) : null
       };
 
       const searchResult = await StockApiService.fetchDetailedStock(ticker.symbol);
@@ -171,7 +164,8 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
 
       // Close dialog
       setAddStockDialog(false);
-      // Call onClose if provided
+      
+      // Call the onClose callback if provided
       if (onClose) {
         onClose();
       }
@@ -279,7 +273,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
           </Box>
         )}
 
-        {/* Sell Price */}
+        {/* Alert Price - Changed label to ask about selling price */}
         <Box sx={{ mb: 3 }}>
           <Typography
             variant="body1"
@@ -294,17 +288,17 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
           </Typography>
 
           <TextField
-            error={!!sellPriceError}
-            helperText={sellPriceError}
+            error={!!priceError}
+            helperText={priceError}
             required
             fullWidth
             id="stock-price"
-            label="Sell price"
+            label="Target sell price"
             type="text"
             variant="outlined"
-            value={sellPrice}
+            value={addStockPrice}
             onChange={handlePriceChange}
-            onBlur={() => validateSellPrice(sellPrice)}
+            onBlur={() => validatePrice(addStockPrice)}
             InputProps={{
               startAdornment: (
                 <Box component="span" sx={{ mr: 0.5 }}>
@@ -419,7 +413,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
         <Button
           variant="contained"
           onClick={onConfirmAddStockDialog}
-          disabled={!addStockSymbol || !sellPrice || (!watchlistName && !wlKey) || !!sellPriceError}
+          disabled={!addStockSymbol || (!watchlistName && !wlKey) || !!priceError}
           sx={{
             bgcolor: 'var(--primary-blue)',
             textTransform: 'none',
