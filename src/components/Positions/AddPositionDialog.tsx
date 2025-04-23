@@ -23,7 +23,7 @@ import { MinimalWatchlistTicker, Watchlists } from '../../interfaces/IWatchlistM
 import { StockApiService } from '../../services/StockApiService';
 import { WatchlistApiService } from '../../services/WatchlistApiService';
 import { useAsyncError } from '../GlobalErrorBoundary';
-import { WatchlistTabSelector } from './WatchlistTabSelector';
+import { WatchlistTabSelector } from '../Watchlist/WatchlistTabSelector';
 
 // Define the prop types for the component
 interface AddStockDialogProps {
