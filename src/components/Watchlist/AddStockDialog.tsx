@@ -148,7 +148,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
       const targetWatchlist = watchlistName ?? wlKey;
       const ticker: MinimalWatchlistTicker = {
         symbol: addStockSymbol,
-        alertPrice: sellPrice ? parseFloat(sellPrice) : null
+        alertPrice: parseFloat(sellPrice)
       };
 
       const searchResult = await StockApiService.fetchDetailedStock(ticker.symbol);
