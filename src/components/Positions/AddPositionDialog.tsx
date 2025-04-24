@@ -32,6 +32,8 @@ interface AddPositionDialogProps {
   setAddStockDialog: (value: boolean) => void;
   positions: Positions;
   setPositions: (positions: Positions) => void;
+  // Add a callback to notify parent when stock info is loaded
+  onStockInfoLoaded?: (stockInfo: IStockQuote) => void;
 }
 
 const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
@@ -39,7 +41,8 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
   positions,
   setPositions,
   isAddStockDialog,
-  setAddStockDialog
+  setAddStockDialog,
+  onStockInfoLoaded
 }) => {
   const [addStockPrice, setAddStockPrice] = useState('');
   const [addStockQuantity, setAddStockQuantity] = useState('');
@@ -48,6 +51,7 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
   const [priceError, setPriceError] = useState('');
   const [quantityError, setQuantityError] = useState('');
   const [dateError, setDateError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
@@ -57,21 +61,50 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
     if (!symbol) return;
 
     try {
+      setIsLoading(true);
       const response = await StockApiService.fetchDetailedStock(symbol);
+      setIsLoading(false);
+
       if (!response || getErrorResponse(response)) {
         return;
       }
+
       setStockInfo(response);
+
+      // Call the callback to notify parent component that stock info is loaded
+      if (onStockInfoLoaded) {
+        onStockInfoLoaded(response);
+      }
+
+      // Auto-populate current price if available
+      if (response.price && !addStockPrice) {
+        setAddStockPrice(response.price.toString());
+      }
     } catch (error) {
+      setIsLoading(false);
       console.error('Error fetching stock data:', error);
     }
   };
 
   useEffect(() => {
-    if (addStockSymbol) {
+    if (addStockSymbol && isAddStockDialog) {
       fetchStockData(addStockSymbol);
     }
-  }, [addStockSymbol]);
+  }, [addStockSymbol, isAddStockDialog]);
+
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!isAddStockDialog) {
+      // Reset form when dialog closes
+      setAddStockPrice('');
+      setAddStockQuantity('');
+      setAddStockDate(null);
+      setPriceError('');
+      setQuantityError('');
+      setDateError('');
+      setStockInfo(undefined);
+    }
+  }, [isAddStockDialog]);
 
   const validatePrice = (price: string): boolean => {
     // First clean up the string (allow trailing decimal point for UX)
@@ -150,12 +183,6 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
   };
 
   const onCancelAddStockDialog = () => {
-    setAddStockPrice('');
-    setAddStockQuantity('');
-    setAddStockDate(null);
-    setPriceError('');
-    setQuantityError('');
-    setDateError('');
     setAddStockDialog(false);
   };
 
@@ -189,8 +216,8 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
         exchange: stockInfo?.exchange || ''
       };
 
-      const searchResult = await StockApiService.fetchDetailedStock(tickers.symbol);
-      if (!searchResult) {
+      // No need to fetch stock data again since we already have it
+      if (!stockInfo) {
         throw new Error(`Could not find stock with symbol ${tickers.symbol} in the database!`);
       }
 
@@ -212,10 +239,7 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
 
       setPositions(updatedPositions);
 
-      // Reset form and close dialog
-      setAddStockPrice('');
-      setAddStockQuantity('');
-      setAddStockDate(null);
+      // Close dialog
       setAddStockDialog(false);
     } catch (error) {
       throwError(error);
@@ -251,7 +275,9 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
       <DialogContent sx={{ pt: 3 }}>
         {/* Stock Info Section */}
         <Box sx={{ mb: 3 }}>
-          {stockInfo && (
+          {isLoading ? (
+            <Typography>Loading stock information...</Typography>
+          ) : stockInfo ? (
             <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
               <Box sx={{ flex: 1 }}>
                 <Typography
@@ -292,7 +318,9 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
                 </Box>
               </Box>
             </Box>
-          )}
+          ) : addStockSymbol ? (
+            <Typography sx={{ color: 'var(--secondary-blue)' }}>No information found for {addStockSymbol}</Typography>
+          ) : null}
         </Box>
 
         {/* Purchase Price */}
@@ -471,7 +499,9 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
             !addStockDate ||
             !!priceError ||
             !!quantityError ||
-            !!dateError
+            !!dateError ||
+            isLoading ||
+            !stockInfo // Disable if no stock info is loaded
           }
           sx={{
             bgcolor: 'var(--primary-blue)',

@@ -8,7 +8,7 @@ export interface IWatchlistModel {
 
 export type MinimalWatchlistTicker = {
   symbol: string;
-  alertPrice?: number;
+  alertPrice: number; // Changed to allow null values
 };
 
 export type CustomTickerData = {
@@ -17,14 +17,33 @@ export type CustomTickerData = {
   yearHighVsCurrentPercentage: number;
   nearLowVsCurrentPercentage: number;
   yearLowVsCurrentPercentage: number;
-  fiveYearLowVsCurrentPercentage: number;
+  // Add the five year percentage properties
   fiveYearHighVsCurrentPercentage: number;
-  fiveYearLow: number;
-  fiveYearHigh: number;
+  fiveYearLowVsCurrentPercentage: number;
 };
 
-export type AlertData = { [symbol: string]: number | undefined };
+// Add timeframe related properties
+export interface TimeframeData {
+  // 90-day timeframe
+  ninetyDayHigh: number;
+  ninetyDayLow: number;
 
-export type WatchlistTicker = MinimalWatchlistTicker & IStockQuote & CustomTickerData;
+  // 180-day timeframe
+  oneEightyDayHigh: number;
+  oneEightyDayLow: number;
+
+  // 3-year timeframe
+  threeYearHigh: number;
+  threeYearLow: number;
+
+  // 5-year timeframe (fiveYearHigh and fiveYearLow should be in IStockQuote)
+  fiveYearHigh: number;
+  fiveYearLow: number;
+}
+
+export type AlertData = { [symbol: string]: number }; // Changed to allow null values
+
+// Update to include the TimeframeData interface
+export type WatchlistTicker = MinimalWatchlistTicker & IStockQuote & CustomTickerData & TimeframeData;
 
 export type Watchlists = { [key: string]: WatchlistTicker[] };
