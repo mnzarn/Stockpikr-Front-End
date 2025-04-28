@@ -245,23 +245,30 @@ function NavigationHeader() {
                 ))}
               </Box>
               {/* Login/Account section with search bar aligned to the right */}
-              <Box sx={{ 
-                display: 'flex',
-                alignItems: 'center',
-                marginLeft: 'auto',
-                flexShrink: 0,
-                height: '100%'
-              }}
+              <Box 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  marginLeft: 'auto', 
+                  flexShrink: 0, 
+                  height: '100%' 
+                }}
               >
+                {isUserLoggedIn && (
+                  <Box sx={{ width: '315px', mr: 2 }}>
+                    <SearchBar />
+                  </Box>
+                )}
+
                 {isUserLoggedIn ? <NavigationAccount /> : <NavigationSignin />}
-                {/*<NavigationLogin />*/}
-                {/* Notifications button with Badge showing current notifications */}
+
                 <IconButton 
                   component={Link} 
                   to="/notifications" 
                   sx={{ 
                     color: "var(--text-color)",
                     "& svg": { fontSize: 32 },
+                    ml: 1
                   }}
                 >
                   <Badge 
