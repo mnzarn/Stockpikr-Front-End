@@ -77,13 +77,13 @@ const Dashboard: React.FC = () => {
           <Timeline feedMode="market" market="stock" height="900" width="100%"></Timeline>
         </Grid>
         <Grid item xs={4}>
-          <StockPriceChangeDataTable data={gainers} title="Market Most Gainers"></StockPriceChangeDataTable>
+          <StockPriceChangeDataTable data={gainers} title="Top Gainers"></StockPriceChangeDataTable>
         </Grid>
         <Grid item xs={4}>
-          <StockPriceChangeDataTable data={losers} title="Market Most Losers"></StockPriceChangeDataTable>
+          <StockPriceChangeDataTable data={losers} title="Top Losers"></StockPriceChangeDataTable>
         </Grid>
         <Grid item xs={4}>
-          <StockPriceChangeDataTable data={actives} title="Market Most Actives"></StockPriceChangeDataTable>
+          <StockPriceChangeDataTable data={actives} title="Most Active"></StockPriceChangeDataTable>
         </Grid>
       </Grid>
     </Box>
