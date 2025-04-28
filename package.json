@@ -1,5 +1,5 @@
 {
-  "type" : "module",
+  "type": "module",
   "homepage": ".",
   "name": "stockpikr_frontend",
   "version": "0.1.0",
@@ -43,7 +43,7 @@
     "predeploy": "CI=false yarn build",
     "deploy": "gh-pages -d build --add && gh-pages -d build --message 'Deployed using GitHub Actions'",
     "deploy-test-environment": "gh-pages -b test-deploy -d build --add && gh-pages -b test-deploy -d build",
-    "test": "react-scripts test", 
+    "test": "react-scripts test",
     "test:mocha": "mocha --loader=ts-node/esm --extensions ts,tsx 'src/**/*.test.tsx'",
     "eject": "react-scripts eject",
     "lint": "eslint ."
@@ -78,6 +78,7 @@
     "@typescript-eslint/eslint-plugin": "^6.20.0",
     "@typescript-eslint/parser": "^6.20.0",
     "chai": "^5.2.0",
+    "chai-dom": "^1.12.1",
     "eslint": "^8.56.0",
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-import": "^2.29.1",
@@ -89,6 +90,8 @@
     "gh-pages": "^6.1.1",
     "jsdom": "^26.1.0",
     "mocha": "^11.1.0",
+    "sino": "^0.0.3",
+    "sinon": "^15.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^4.9.5"
   },
