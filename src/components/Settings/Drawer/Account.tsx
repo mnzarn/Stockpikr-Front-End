@@ -31,11 +31,11 @@ export const Account: React.FC = () => {
       const user = await UserApiService.fetchUserDetails();
       if (user) {
         setAccountValues({
-          firstName: user.displayName?.split(" ")[0] || "",
-          lastName: user.displayName?.split(" ")[1] || "",
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
           email: user.email,
           phoneNumber: user.phoneNumber || "",
-          profilePic: user.photoURL || ""
+          profilePic: user.profilePic || ""
         });
       }
     };
