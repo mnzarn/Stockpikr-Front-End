@@ -44,8 +44,8 @@ export const Account: React.FC = () => {
           phoneNumber: user.phoneNumber || "",
           profilePic: user.profilePic || ""
         });
-        setEditedFirstName(user.displayName?.split(' ')[0] || '');
-        setEditedLastName(user.displayName?.split(' ')[1] || '');
+        setEditedFirstName(user.firstName || '');
+        setEditedLastName(user.lastName || '');
       }
     };
     queryUserInfo();
