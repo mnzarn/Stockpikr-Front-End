@@ -78,11 +78,11 @@ function NavigationAccount() {
       console.log(user);
       if (user) {
         setUserInfo({
-          firstName: user.displayName?.split(" ")[0] || "",
-          lastName: user.displayName?.split(" ")[1] || "",
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
           email: user.email,
           phoneNumber: user.phoneNumber || "",
-          profilePic: user.photoURL || ""
+          profilePic: user.profilePic || ""
         });
       }
     };
