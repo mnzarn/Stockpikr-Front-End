@@ -2,7 +2,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { Autocomplete, CircularProgress, ClickAwayListener, InputAdornment, TextField } from '@mui/material';
 import React, { useRef, useState } from 'react';
 import { getErrorResponse } from '../../helper/errorResponse';
-import { IStockQuote } from '../../interfaces/IStockQuote';
+import IStockData from '../../interfaces/IStockData';
 import { StockApiService } from '../../services/StockApiService';
 
 interface WatchlistSearchBarProps {
@@ -16,7 +16,7 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
   onSelectStock,
   isDisabled = false
 }) => {
-  const [searchOptions, setSearchOptions] = useState<IStockQuote[]>([]);
+  const [searchOptions, setSearchOptions] = useState<IStockData[]>([]);
   const [inputSearch, setInputSearch] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -47,7 +47,7 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
 
   const fetchData = async (value: string): Promise<void> => {
     try {
-      const response = await StockApiService.fetchDetailedStockSearch(value);
+      const response = await StockApiService.fetchStockSearch(value);
 
       if (!response || getErrorResponse(response)) {
         setSearchOptions([]);
@@ -61,7 +61,7 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
     }
   };
 
-  const handleOnSearchOptionChange = (e: React.SyntheticEvent<Element, Event>, value: IStockQuote | null) => {
+  const handleOnSearchOptionChange = (e: React.SyntheticEvent<Element, Event>, value: IStockData | null) => {
     if (!value) return;
 
     setAddStockSymbol(value.symbol);
@@ -86,7 +86,7 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
     }
   };
 
-  const filterOptions = (options: IStockQuote[], { inputValue }: { inputValue: string }) => {
+  const filterOptions = (options: IStockData[], { inputValue }: { inputValue: string }) => {
     if (options.length === 0) return options;
 
     const inputLower = inputValue.toLowerCase();
@@ -145,7 +145,7 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
               >
                 {option.name}
               </span>
-              <em style={{ width: '100px', textAlign: 'right', fontSize: '12px' }}>{option.exchange}</em>
+              <em style={{ width: '100px', textAlign: 'right', fontSize: '12px' }}>{option.stockExchange}</em>
             </li>
           )}
           sx={{
