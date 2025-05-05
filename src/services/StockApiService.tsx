@@ -17,7 +17,7 @@ export class StockApiService extends BaseApiService {
     }
     // TODO: add pagination
     const searchQueryLimit = 10;
-    const url = `${this.endpoint}${input}?limit=${searchQueryLimit}`;
+    const url = `${this.endpoint}${input.toUpperCase()}?limit=${searchQueryLimit}`;
     const response = await StockApiService.fetchData<IStockData[]>(url);
     if (response) {
       return response;

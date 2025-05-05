@@ -4,12 +4,12 @@ import TextField from '@mui/material/TextField';
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getErrorResponse } from '../helper/errorResponse';
-import { IStockQuote } from '../interfaces/IStockQuote';
+import IStockData from '../interfaces/IStockData';
 import { StockApiService } from '../services/StockApiService';
 import { useAsyncError } from './GlobalErrorBoundary';
 
 const SearchBar: React.FC = () => {
-  const [searchOptions, setSearchOptions] = useState<IStockQuote[]>([]);
+  const [searchOptions, setSearchOptions] = useState<IStockData[]>([]);
   const [inputSearch, setInputSearch] = useState<string>('');
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ const SearchBar: React.FC = () => {
     setSearchOptions([]);
   };
 
-  const filterOptions = (options: IStockQuote[], { inputValue }: { inputValue: string }) => {
+  const filterOptions = (options: IStockData[], { inputValue }: { inputValue: string }) => {
     if (options.length === 0) {
       return options;
     }
@@ -48,7 +48,7 @@ const SearchBar: React.FC = () => {
     return filterOptions;
   };
 
-  const handleOnChangeAutoComplete = (e: React.SyntheticEvent<Element, Event>, value: IStockQuote | null) => {
+  const handleOnChangeAutoComplete = (e: React.SyntheticEvent<Element, Event>, value: IStockData | null) => {
     if (!value) {
       return;
     }
@@ -56,7 +56,7 @@ const SearchBar: React.FC = () => {
   };
 
   const fetchData = async (value: string): Promise<void> => {
-    StockApiService.fetchDetailedStockSearch(value)
+    StockApiService.fetchStockSearch(value)
       .then((response): void => {
         if (!response || getErrorResponse(response)) {
           return;
@@ -113,7 +113,7 @@ const SearchBar: React.FC = () => {
             >
               <strong style={{ width: '80px', textAlign: 'left' }}>{option.symbol}</strong>
               <span style={{ flex: 1, marginLeft: '10px', marginRight: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{option.name}</span>
-              <em style={{ width: '100px', textAlign: 'right', fontSize: '12px' }}>{option.exchange}</em>
+              <em style={{ width: '100px', textAlign: 'right', fontSize: '12px' }}>{option.stockExchange}</em>
             </li>
           )}
           sx={{
