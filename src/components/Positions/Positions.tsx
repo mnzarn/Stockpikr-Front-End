@@ -1,7 +1,25 @@
+export const validatePositionName = (name: string): { valid: boolean; message: string } => {
+  const validPattern = /^[a-zA-Z0-9\-_\s]+$/;
+
+  if (!validPattern.test(name)) {
+    const invalidChars = name.split('').filter((char) => !validPattern.test(char));
+    const uniqueInvalidChars = [...new Set(invalidChars)];
+
+    return {
+      valid: false,
+      message: `Position name can only contain letters, numbers, hyphens, underscores, and spaces. Invalid characters: ${uniqueInvalidChars.join(' ')}`
+    };
+  }
+
+  return { valid: true, message: '' };
+};
+import AddIcon from '@mui/icons-material/Add';
+
 import DeleteIcon from '@mui/icons-material/Delete';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import {
+  Alert,
   Box,
   Button,
   Checkbox,
@@ -12,18 +30,17 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
-  Paper,
-  Table,
+  Paper, Tab, Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
+  TableRow, Tabs,
+  TextField,
   Tooltip,
   Typography
 } from '@mui/material';
 import React, { useEffect, useMemo, useState } from 'react';
-
 import { getErrorResponse } from '../../helper/errorResponse';
 import { getUserID } from '../../helper/userID';
 import { PositionTickers } from '../../interfaces/IPositionsModel';
@@ -112,6 +129,11 @@ export default function MyPositions() {
   const [isAddStockDialog, setAddStockDialog] = useState(false);
   const [addStockSymbol, setAddStockSymbol] = useState('');
   const [stockInfo, setStockInfo] = useState<IStockQuote>();
+  const [positionKey, setPositionKey] = useState('');
+const [positionKeys, setPositionKeys] = useState<string[]>([]);
+const [createPositionOpen, setCreatePositionOpen] = useState(false);
+const [newPositionName, setNewPositionName] = useState('');
+const [positionNameError, setPositionNameError] = useState('');
   const throwError = useAsyncError();
 
   // Generate a unique ID for each position to use for selection
@@ -198,6 +220,31 @@ export default function MyPositions() {
       throwError(error);
     }
   };
+  const handleCreateNewPosition = async () => {
+    setPositionNameError('');
+  
+    if (newPositionName.trim() && positions) {
+      if (positionKeys.includes(newPositionName.trim())) {
+        setPositionNameError('A position set with this name already exists.');
+        return;
+      }
+  
+      const validation = validatePositionName(newPositionName.trim());
+      if (!validation.valid) {
+        setPositionNameError(validation.message);
+        return;
+      }
+  
+      const newName = newPositionName.trim();
+      const updated = { ...positions, [newName]: [] };
+      setPositions(updated);
+      setPositionKeys(Object.keys(updated));
+      setPositionKey(newName);
+      setCreatePositionOpen(false);
+      setNewPositionName('');
+    }
+  };
+  
 
   const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof PositionTickers) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -342,6 +389,59 @@ export default function MyPositions() {
             My Positions
           </Typography>
         </Box>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', mt: 2 }}>
+  <Tabs
+    value={positionKey}
+    onChange={(e, val) => setPositionKey(val)}
+    variant="scrollable"
+    scrollButtons="auto"
+    sx={{
+      '& .MuiTab-root': {
+        fontFamily: 'var(--font-family)',
+        color: 'var(--secondary-blue)',
+        '&.Mui-selected': {
+          color: 'var(--primary-blue)',
+          fontWeight: 600
+        }
+      },
+      '& .MuiTabs-indicator': {
+        backgroundColor: 'var(--primary-blue)'
+      }
+    }}
+  >
+    {positionKeys.map((key) => (
+      <Tab
+        key={key}
+        label={key}
+        value={key}
+        sx={{
+          textTransform: 'none',
+          fontWeight: positionKey === key ? 600 : 400
+        }}
+      />
+    ))}
+  </Tabs>
+
+  <Button
+    startIcon={<AddIcon />}
+    onClick={() => {
+      setPositionNameError('');
+      setCreatePositionOpen(true);
+    }}
+    sx={{
+      ml: 1,
+      color: 'var(--primary-blue)',
+      borderRadius: '12px',
+      textTransform: 'none',
+      fontWeight: 600,
+      '&:hover': {
+        backgroundColor: 'var(--background-light)'
+      }
+    }}
+  >
+    Create
+  </Button>
+</Box>
 
         {/* Search and add stock section */}
         <Box
@@ -567,6 +667,35 @@ export default function MyPositions() {
         isAddStockDialog={isAddStockDialog}
         setAddStockDialog={setAddStockDialog}
       />
+      <Dialog open={createPositionOpen} onClose={() => setCreatePositionOpen(false)}>
+  <DialogTitle>Create New Position Set</DialogTitle>
+  <DialogContent>
+    <DialogContentText sx={{ mb: 2 }}>
+      Enter a name for your new position set:
+    </DialogContentText>
+
+    {positionNameError && (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        {positionNameError}
+      </Alert>
+    )}
+
+    <TextField
+      autoFocus
+      fullWidth
+      label="Position Name"
+      value={newPositionName}
+      onChange={(e) => setNewPositionName(e.target.value)}
+    />
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setCreatePositionOpen(false)}>Cancel</Button>
+    <Button onClick={handleCreateNewPosition} disabled={!newPositionName.trim()}>
+      Create
+    </Button>
+  </DialogActions>
+</Dialog>
+
     </TableContainer>
   );
 }
