@@ -15,7 +15,7 @@ export default function SignIn() {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       await UserApiService.createUserIfNotExists();
-      window.location.href = '/dashboard';
+      window.location.href = '/#/dashboard';
     } catch (error) {
       setErrorMessage((error as Error).message);
     }
