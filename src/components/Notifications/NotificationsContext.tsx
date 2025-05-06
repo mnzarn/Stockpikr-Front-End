@@ -61,7 +61,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
               }
             };
           
-            if (absPercentage < 1) {
+            if (absPercentage == 0) {
               exactMatches.push(notification);
             } else if (absPercentage <= 5) {
               nearMatches.push(notification);
