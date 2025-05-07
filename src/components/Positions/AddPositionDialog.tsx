@@ -8,54 +8,60 @@ import {
   DialogTitle,
   Divider,
   FormControl,
-  InputAdornment,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
   TextField,
   Typography,
   useMediaQuery,
   useTheme
 } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { getErrorResponse } from '../../helper/errorResponse';
-import { Positions } from '../../interfaces/IPositionsModel';
 import { IStockQuote } from '../../interfaces/IStockQuote';
-import { PositionsApiService } from '../../services/PositionsApiService';
+import { MinimalWatchlistTicker, Watchlists } from '../../interfaces/IWatchlistModel';
 import { StockApiService } from '../../services/StockApiService';
+import { WatchlistApiService } from '../../services/WatchlistApiService';
 import { useAsyncError } from '../GlobalErrorBoundary';
+import { WatchlistTabSelector } from '../Watchlist/WatchlistTabSelector';
 
-interface AddPositionDialogProps {
+// Define the prop types for the component
+interface AddStockDialogProps {
   addStockSymbol: string;
+  watchlistName?: string;
   isAddStockDialog: boolean;
   setAddStockDialog: (value: boolean) => void;
-  positions: Positions;
-  setPositions: (positions: Positions) => void;
+  watchlists: Watchlists | undefined;
+  setWatchlists: (watchlists: Watchlists) => void;
+  onClose?: () => void; // Add optional onClose callback
 }
 
-const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
+const AddStockDialog: React.FC<AddStockDialogProps> = ({
   addStockSymbol,
-  positions,
-  setPositions,
+  watchlists,
+  setWatchlists,
+  watchlistName,
   isAddStockDialog,
-  setAddStockDialog
+  setAddStockDialog,
+  onClose
 }) => {
   const [addStockPrice, setAddStockPrice] = useState('');
-  const [addStockQuantity, setAddStockQuantity] = useState('');
-  const [addStockDate, setAddStockDate] = useState<Date | null>(null);
   const [stockInfo, setStockInfo] = useState<IStockQuote>();
+  const [stockTrackingDays, setStockTrackingDays] = useState(90);
+  const [wlKey, setWlKey] = useState('');
   const [priceError, setPriceError] = useState('');
-  const [quantityError, setQuantityError] = useState('');
-  const [dateError, setDateError] = useState('');
-
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const throwError = useAsyncError();
 
-  const fetchStockData = async (symbol: string): Promise<void> => {
-    if (!symbol) return;
+  // Fetch stock data when symbol changes
+  useEffect(() => {
+    if (addStockSymbol) {
+      fetchStockData(addStockSymbol);
+    }
+  }, [addStockSymbol]);
 
+  const fetchStockData = async (symbol: string): Promise<void> => {
     try {
       const response = await StockApiService.fetchDetailedStock(symbol);
       if (!response || getErrorResponse(response)) {
@@ -67,19 +73,13 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
     }
   };
 
-  useEffect(() => {
-    if (addStockSymbol) {
-      fetchStockData(addStockSymbol);
-    }
-  }, [addStockSymbol]);
-
   const validatePrice = (price: string): boolean => {
     // First clean up the string (allow trailing decimal point for UX)
     const cleanedPrice = price.trim().endsWith('.') ? price.trim() + '0' : price.trim();
 
     if (!cleanedPrice) {
-      setPriceError('Purchase price cannot be empty');
-      return false;
+      setPriceError('');
+      return true; 
     }
 
     // More permissive pattern for validation on blur/submit
@@ -99,124 +99,76 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
     return true;
   };
 
-  const validateQuantity = (quantity: string): boolean => {
-    const cleanedQuantity = quantity.trim();
-
-    if (!cleanedQuantity) {
-      setQuantityError('Quantity cannot be empty');
-      return false;
-    }
-
-    // Only allow whole numbers for quantity
-    if (!/^[1-9][0-9]*$/.test(cleanedQuantity)) {
-      setQuantityError('Enter a valid whole number greater than 0');
-      return false;
-    }
-
-    setQuantityError('');
-    return true;
-  };
-
-  const validateDate = (date: Date | null): boolean => {
-    if (!date) {
-      setDateError('Purchase date is required');
-      return false;
-    }
-
-    setDateError('');
-    return true;
-  };
-
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPrice = e.target.value;
     // Allow typing decimals more freely
+    // This regex allows input like "10." during typing
     if (newPrice === '' || /^[0-9]*\.?[0-9]*$/.test(newPrice)) {
       setAddStockPrice(newPrice);
+      // Don't validate during typing - wait for blur or submit
     }
-  };
-
-  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newQuantity = e.target.value;
-    // Only allow numbers
-    if (newQuantity === '' || /^[0-9]*$/.test(newQuantity)) {
-      setAddStockQuantity(newQuantity);
-    }
-  };
-
-  const setToday = () => {
-    const today = new Date();
-    setAddStockDate(today);
-    setDateError('');
   };
 
   const onCancelAddStockDialog = () => {
     setAddStockPrice('');
-    setAddStockQuantity('');
-    setAddStockDate(null);
     setPriceError('');
-    setQuantityError('');
-    setDateError('');
+    setStockTrackingDays(90);
     setAddStockDialog(false);
+    
+    // Call the onClose callback if provided
+    if (onClose) {
+      onClose();
+    }
   };
 
   const onConfirmAddStockDialog = async () => {
     try {
       // Validate all inputs
-      const isPriceValid = validatePrice(addStockPrice);
-      const isQuantityValid = validateQuantity(addStockQuantity);
-      const isDateValid = validateDate(addStockDate);
-
-      if (!isPriceValid || !isQuantityValid || !isDateValid) {
-        return; // Don't proceed if validation fails
+      if (!validatePrice(addStockPrice)) {
+        return;
       }
 
       if (!addStockSymbol) {
-        throw new Error('Stock symbol cannot be empty');
+        throw 'Stock symbol cannot be empty';
+      }
+      if (!watchlists) {
+        throw 'Watchlists are empty';
+      }
+      if (!watchlistName && !wlKey) {
+        throw 'Select a watchlist';
       }
 
-      // Store date as standard Date object
-      const purchaseDate = addStockDate ? new Date(addStockDate) : null;
-
-      const tickers = {
+      const targetWatchlist = watchlistName ?? wlKey;
+      const ticker: MinimalWatchlistTicker = {
         symbol: addStockSymbol,
-        purchasePrice: Number(addStockPrice),
-        quantity: Number(addStockQuantity),
-        price: stockInfo?.price || 0,
-        purchaseDate: purchaseDate,
-        priceChange: 0,
-        gainOrLoss: 0,
-        marketValue: 0,
-        exchange: stockInfo?.exchange || ''
+        alertPrice: addStockPrice ? parseFloat(addStockPrice) : null
       };
 
-      const searchResult = await StockApiService.fetchDetailedStock(tickers.symbol);
+      const searchResult = await StockApiService.fetchDetailedStock(ticker.symbol);
       if (!searchResult) {
-        throw new Error(`Could not find stock with symbol ${tickers.symbol} in the database!`);
+        throw `Could not find stock with symbol ${ticker.symbol} in the database!`;
       }
 
-      await PositionsApiService.addStockToPurchasedStocks(tickers);
+      // Add stock to watchlist
+      await WatchlistApiService.addStockToWatchlist(ticker, targetWatchlist);
 
-      const updatedPurchasedStocks = await PositionsApiService.fetchPurchasedStocksByUserId();
-      if (!updatedPurchasedStocks) {
-        throw new Error(`Cannot find the purchased stocks data after adding new stocks`);
+      // Refresh watchlist data
+      const watchlist = await WatchlistApiService.fetchWatchlist(targetWatchlist);
+      if (!watchlist) {
+        throw `Cannot find the watchlist ${targetWatchlist} data after adding new stocks`;
       }
 
-      const updatedPositions: Positions = {};
-      for (const key in positions) {
-        updatedPositions[key] = positions[key];
-      }
+      // Update state
+      watchlists[targetWatchlist] = watchlist.tickers;
+      setWatchlists({ ...watchlists });
 
-      // Add the updated positions
-      const userKey = Object.keys(positions)[0] || '';
-      updatedPositions[userKey] = updatedPurchasedStocks.flatMap((p) => p.tickers);
-
-      setPositions(updatedPositions);
-
-      // Reset form and close dialog
-      setAddStockPrice('');
-      setAddStockQuantity('');
-      setAddStockDate(null);
+      // Close dialog
       setAddStockDialog(false);
+      
+      // Call the onClose callback if provided
+      if (onClose) {
+        onClose();
+      }
     } catch (error) {
       throwError(error);
     }
@@ -243,7 +195,7 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
           pb: 1
         }}
       >
-        Add {addStockSymbol} Position
+        Add {addStockSymbol} to watchlist
       </DialogTitle>
 
       <Divider />
@@ -295,7 +247,33 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
           )}
         </Box>
 
-        {/* Purchase Price */}
+        {/* Watchlist Selection */}
+        {!watchlistName && (
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="body1"
+              sx={{
+                mb: 1,
+                fontWeight: 500,
+                color: 'var(--primary-blue)',
+                fontFamily: 'var(--font-family)'
+              }}
+            >
+              Select watchlist
+            </Typography>
+
+            <WatchlistTabSelector
+              addStockSymbol={addStockSymbol}
+              showDeleteIcon={false}
+              watchLists={watchlists!}
+              setWatchLists={setWatchlists}
+              selectedWatchList={wlKey}
+              setSelectedWatchList={setWlKey}
+            />
+          </Box>
+        )}
+
+        {/* Alert Price - Changed label to ask about selling price */}
         <Box sx={{ mb: 3 }}>
           <Typography
             variant="body1"
@@ -306,7 +284,7 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
               fontFamily: 'var(--font-family)'
             }}
           >
-            Purchase price
+            At what price would you like to sell {addStockSymbol}?
           </Typography>
 
           <TextField
@@ -314,15 +292,19 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
             helperText={priceError}
             required
             fullWidth
-            id="purchase-price"
-            label="Purchase price"
+            id="stock-price"
+            label="Target sell price"
             type="text"
             variant="outlined"
             value={addStockPrice}
             onChange={handlePriceChange}
             onBlur={() => validatePrice(addStockPrice)}
             InputProps={{
-              startAdornment: <InputAdornment position="start">$</InputAdornment>
+              startAdornment: (
+                <Box component="span" sx={{ mr: 0.5 }}>
+                  $
+                </Box>
+              )
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
@@ -337,46 +319,7 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
           />
         </Box>
 
-        {/* Quantity */}
-        <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="body1"
-            sx={{
-              mb: 1,
-              fontWeight: 500,
-              color: 'var(--primary-blue)',
-              fontFamily: 'var(--font-family)'
-            }}
-          >
-            Quantity
-          </Typography>
-
-          <TextField
-            error={!!quantityError}
-            helperText={quantityError}
-            required
-            fullWidth
-            id="stock-quantity"
-            label="Number of shares"
-            type="text"
-            variant="outlined"
-            value={addStockQuantity}
-            onChange={handleQuantityChange}
-            onBlur={() => validateQuantity(addStockQuantity)}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                '&.Mui-focused fieldset': {
-                  borderColor: 'var(--primary-blue)'
-                }
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: 'var(--primary-blue)'
-              }
-            }}
-          />
-        </Box>
-
-        {/* Purchase Date */}
+        {/* Tracking Period */}
         <Box>
           <Typography
             variant="body1"
@@ -387,63 +330,69 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
               fontFamily: 'var(--font-family)'
             }}
           >
-            Purchase date
+            Tracking period
           </Typography>
 
-          <FormControl fullWidth error={!!dateError}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="Purchase date"
-                  value={addStockDate ? dayjs(addStockDate) : null}
-                  onChange={(newValue: any) => {
-                    setAddStockDate(newValue ? newValue.toDate() : null);
-                    if (newValue) setDateError('');
-                  }}
-                  slotProps={{
-                    textField: {
-                      required: true,
-                      fullWidth: true,
-                      variant: 'outlined',
-                      error: !!dateError,
-                      helperText: dateError,
-                      sx: {
-                        '& .MuiOutlinedInput-root': {
-                          '&.Mui-focused fieldset': {
-                            borderColor: 'var(--primary-blue)'
-                          }
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: 'var(--primary-blue)'
-                        }
+          <FormControl component="fieldset">
+            <RadioGroup
+              aria-label="tracking-period"
+              name="tracking-period"
+              value={stockTrackingDays}
+              onChange={(e) => setStockTrackingDays(+e.target.value)}
+              row
+            >
+              <FormControlLabel
+                value={90}
+                control={
+                  <Radio
+                    sx={{
+                      color: 'var(--secondary-blue)',
+                      '&.Mui-checked': {
+                        color: 'var(--primary-blue)'
                       }
-                    }
-                  }}
-                />
-              </LocalizationProvider>
-
-              <Button
-                variant="outlined"
-                onClick={setToday}
+                    }}
+                  />
+                }
+                label="90 days"
                 sx={{
-                  height: '56px',
-                  minWidth: '100px',
-                  marginTop: 0,
-                  color: 'var(--primary-blue)',
-                  borderColor: 'var(--border-color)',
-                  textTransform: 'none',
-                  fontFamily: 'var(--font-family)',
-                  fontWeight: 500,
-                  '&:hover': {
-                    borderColor: 'var(--primary-blue)',
-                    backgroundColor: 'rgba(0, 119, 255, 0.04)'
+                  '& .MuiFormControlLabel-label': {
+                    fontFamily: 'var(--font-family)'
                   }
                 }}
-              >
-                Today
-              </Button>
-            </Box>
+              />
+              <FormControlLabel
+                value={180}
+                control={
+                  <Radio
+                    sx={{
+                      color: 'var(--secondary-blue)',
+                      '&.Mui-checked': {
+                        color: 'var(--primary-blue)'
+                      }
+                    }}
+                  />
+                }
+                label="180 days"
+                sx={{
+                  '& .MuiFormControlLabel-label': {
+                    fontFamily: 'var(--font-family)'
+                  }
+                }}
+              />
+            </RadioGroup>
           </FormControl>
+
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              mt: 0.5,
+              color: 'var(--secondary-blue)',
+              fontFamily: 'var(--font-family)'
+            }}
+          >
+            This setting controls how long to track the stock for near-term analysis
+          </Typography>
         </Box>
       </DialogContent>
 
@@ -464,15 +413,7 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
         <Button
           variant="contained"
           onClick={onConfirmAddStockDialog}
-          disabled={
-            !addStockSymbol ||
-            !addStockPrice ||
-            !addStockQuantity ||
-            !addStockDate ||
-            !!priceError ||
-            !!quantityError ||
-            !!dateError
-          }
+          disabled={!addStockSymbol || (!watchlistName && !wlKey) || !!priceError}
           sx={{
             bgcolor: 'var(--primary-blue)',
             textTransform: 'none',
@@ -486,11 +427,11 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
             }
           }}
         >
-          Add Position
+          Add to Watchlist
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
 
-export default AddPositionDialog;
+export default AddStockDialog;

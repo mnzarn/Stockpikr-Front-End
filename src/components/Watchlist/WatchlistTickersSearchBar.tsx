@@ -29,12 +29,16 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
   const [inputSearch, setInputSearch] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Add a ref to track if the component has been interacted with
+  const hasInteractedRef = useRef<boolean>(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleOnChangeTextField = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setInputSearch(value);
     setError(null);
+    // Mark as interacted whenever user types
+    hasInteractedRef.current = true;
 
     if (value.trim().length === 0) {
       setSearchOptions([]);
@@ -81,33 +85,50 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
   };
 
   const handleOnSearchOptionChange = (e: React.SyntheticEvent<Element, Event>, value: IStockQuote | null) => {
+    // Mark as interacted whenever a selection is made
+    hasInteractedRef.current = true;
+    
     if (!value) {
       return;
     }
+    
+    // Set the symbol first
     setAddStockSymbol(value.symbol);
-    setInputSearch(''); // Clear input immediately
-    setSearchOptions([]); // Clear search options to close dropdown
+    
+    // Clear input immediately
+    setInputSearch('');
+    
+    // Clear search options to close dropdown
+    setSearchOptions([]);
 
+    // Slight delay to ensure the symbol is set before triggering the callback
     if (onSelectStock) {
-      setTimeout(() => onSelectStock(), 100); // Small delay to ensure symbol is set
+      setTimeout(() => onSelectStock(), 50);
     }
   };
 
   const handleEnterPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault();
+      
+      // Mark as interacted on Enter key
+      hasInteractedRef.current = true;
 
       // If we have search results, use the first one
       if (searchOptions.length > 0) {
         const matchingStock =
           searchOptions.find((option) => option.symbol.toLowerCase() === inputSearch.toLowerCase()) || searchOptions[0]; // Use exact match if found, otherwise first result
 
+        // Set the symbol first
         setAddStockSymbol(matchingStock.symbol);
-        setInputSearch(''); // Clear input
-        setSearchOptions([]); // Clear search options to close dropdown
+        
+        // Clear input and search options
+        setInputSearch('');
+        setSearchOptions([]);
 
+        // Ensure the callback is called after state updates
         if (onSelectStock) {
-          setTimeout(() => onSelectStock(), 100);
+          setTimeout(() => onSelectStock(), 50);
         }
       }
     }
@@ -132,6 +153,18 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
     return options.filter(
       (stock) => stock.name.toLowerCase().includes(inputLower) || stock.symbol.toLowerCase().includes(inputLower)
     );
+  };
+
+  // Handle clicks on options directly
+  const handleOptionClick = (option: IStockQuote) => {
+    hasInteractedRef.current = true;
+    setAddStockSymbol(option.symbol);
+    setInputSearch('');
+    setSearchOptions([]);
+    
+    if (onSelectStock) {
+      setTimeout(() => onSelectStock(), 50);
+    }
   };
 
   return (
@@ -228,6 +261,10 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
               display: 'flex',
               alignItems: 'center',
               padding: '8px 16px'
+            }}
+            onClick={(e) => {
+              props.onClick?.(e);
+              handleOptionClick(option);
             }}
           >
             <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>

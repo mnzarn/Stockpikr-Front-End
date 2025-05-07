@@ -8,22 +8,41 @@ export interface IWatchlistModel {
 
 export type MinimalWatchlistTicker = {
   symbol: string;
-  alertPrice: number;
+  alertPrice: number | null;
 };
 
 export type CustomTickerData = {
-  currentVsAlertPricePercentage: number;
-  nearHighVsCurrentPercentage: number;
-  yearHighVsCurrentPercentage: number;
-  nearLowVsCurrentPercentage: number;
-  yearLowVsCurrentPercentage: number;
-  fiveYearLowVsCurrentPercentage: number;
-  fiveYearHighVsCurrentPercentage: number;
-  fiveYearLow: number;
-  fiveYearHigh: number;
+  // Existing percentage fields
+  currentVsAlertPricePercentage: number | null;
+  nearHighVsCurrentPercentage: number | null;
+  yearHighVsCurrentPercentage: number | null;
+  nearLowVsCurrentPercentage: number | null;
+  yearLowVsCurrentPercentage: number | null;
+  fiveYearLowVsCurrentPercentage: number | null;
+  fiveYearHighVsCurrentPercentage: number | null;
+
+  // Existing high/low fields
+  fiveYearLow: number | null;
+  fiveYearHigh: number | null;
+
+  // New timeframe fields
+  ninetyDayHigh: number | null;
+  ninetyDayLow: number | null;
+  oneEightyDayHigh: number | null;
+  oneEightyDayLow: number | null;
+  threeYearHigh: number | null;
+  threeYearLow: number | null;
+
+  // New timeframe percentage fields
+  ninetyDayHighVsCurrentPercentage: number | null;
+  ninetyDayLowVsCurrentPercentage: number | null;
+  oneEightyDayHighVsCurrentPercentage: number | null;
+  oneEightyDayLowVsCurrentPercentage: number | null;
+  threeYearHighVsCurrentPercentage: number | null;
+  threeYearLowVsCurrentPercentage: number | null;
 };
 
-export type AlertData = { [symbol: string]: number };
+export type AlertData = { [symbol: string]: number | null };
 
 export type WatchlistTicker = MinimalWatchlistTicker & IStockQuote & CustomTickerData;
 

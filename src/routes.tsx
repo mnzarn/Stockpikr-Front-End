@@ -2,6 +2,7 @@ import { ComponentType, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import Dashboard from './components/Dashboard/Dashboard';
 import LandingPage from './components/LandingPage';
+import Notifications from './components/Notifications/Notifications';
 import Positions from './components/Positions/Positions';
 import SignedOutPositions from './components/Positions/SignedOutPositions';
 import Settings from './components/Settings/Settings';
@@ -41,6 +42,7 @@ const routes = () => (
     <Route path="/dashboard" element={<Dashboard />} />
     <Route path="/positions" element={<ProtectedRoute signedInComponent={Positions} signedOutComponent={SignedOutPositions} />} />
     <Route path="/settings" element={<Settings />} />
+    <Route path="/notifications" element={<Notifications />} />
     <Route path="/signin" element={<SignIn />} />
     <Route path="/swaggerDocs" element={<SwaggerDocs />} />
     <Route path="/quote" element={<StockQuotePage />} />
