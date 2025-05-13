@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getUserID } from "../../helper/userID";
 import { WatchlistTicker } from "../../interfaces/IWatchlistModel";
+import { UserApiService } from "../../services/UserApiService";
 import { WatchlistApiService } from "../../services/WatchlistApiService";
 
 interface StockData {
@@ -25,6 +26,7 @@ interface NotificationContextType {
   notificationCount: number;
   setNotificationCount: React.Dispatch<React.SetStateAction<number>>;
   loading: boolean;
+  toggle: boolean;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -33,6 +35,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   const [exactNotifications, setExactNotifications] = useState<Notification[]>([]);
   const [nearNotifications, setNearNotifications] = useState<Notification[]>([]);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [toggle, setToggle] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const queryWatchLists = async () => {
@@ -40,10 +43,22 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       setLoading(true);
       const userID: string = await getUserID();
       const watchlists = await WatchlistApiService.fetchWatchlistsByUserId(userID);
+      const toggle = await UserApiService.getNotificationSetting();
+
+      if (toggle && typeof toggle.notifications === "boolean") {
+        setToggle(toggle.notifications);
+      }
 
       let exactMatches: Notification[] = [];
       let nearMatches: Notification[] = [];
 
+      if (!toggle || !toggle.notifications) {
+        setExactNotifications([]);
+        setNearNotifications([]);
+        setNotificationCount(0);
+        return;
+      }
+      
       if (Array.isArray(watchlists)) {
         watchlists.forEach((wl) => {
           wl.tickers.forEach((stock: WatchlistTicker) => {
@@ -96,14 +111,14 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         refreshNotifications: queryWatchLists,
         notificationCount,
         setNotificationCount,
-        loading
+        loading,
+        toggle
       }}
     >
       {children}
     </NotificationContext.Provider>
   );
 };
-
 
 export const useNotificationContext = () => {
   const context = useContext(NotificationContext);

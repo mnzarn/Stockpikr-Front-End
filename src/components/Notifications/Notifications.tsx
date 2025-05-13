@@ -1,5 +1,6 @@
 import CloseIcon from "@mui/icons-material/Close";
 import { Alert, Box, IconButton, Paper, Typography } from "@mui/material";
+import { Link } from "react-router-dom";
 import { useNotificationContext } from "./NotificationsContext";
 
 const Notifications = () => {
@@ -10,6 +11,7 @@ const Notifications = () => {
     setNearNotifications,
     setNotificationCount,
     loading,
+    toggle,
   } = useNotificationContext();
   
   const handleClose = (
@@ -59,7 +61,15 @@ const Notifications = () => {
               "& .MuiAlert-message": { width: "100%" },
             }}
           >
-            <strong>{stock.symbol}</strong> in <strong>{watchlistName} </strong>
+            <strong>
+              <Link 
+                to={`/watchlist?wl=${encodeURIComponent(watchlistName)}&highlight=${stock.symbol}`}
+              
+                style={{ textDecoration: "underline", color: "inherit" }}
+              >
+                {stock.symbol}
+              </Link>
+            </strong> in <strong>{watchlistName} </strong>
             {type === "exact" ? "hit" : "is near"} its alert price of <strong>${stock.alertPrice.toFixed(2)} </strong>  
             Current Price: <strong>${stock.price.toFixed(2)}</strong>
           </Alert>
@@ -87,7 +97,8 @@ const Notifications = () => {
         <Typography sx={{ textAlign: "center", color: "gray" }}>
           Loading notifications...
         </Typography>
-      ) : (
+      ) :
+      toggle ? (
         <Box
           sx={{
             display: "flex",
@@ -122,7 +133,11 @@ const Notifications = () => {
               </Typography>
             )}
           </Box>
-        </Box>
+        </Box>        
+      ) : (
+        <Typography sx={{ textAlign: "center", color: "gray" }}>
+          Notifications are disabled. Please enable them in settings.
+        </Typography>
       )}
     </Box>
   );    

@@ -39,7 +39,8 @@ import {
 } from '@mui/material';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation } from "react-router-dom";
 
 import { getUserID } from '../../helper/userID';
 import { AlertData, MinimalWatchlistTicker, WatchlistTicker, Watchlists } from '../../interfaces/IWatchlistModel';
@@ -683,8 +684,15 @@ export default function Watchlist() {
   // Add a state to track search readiness
   const [searchReady, setSearchReady] = useState(false);
 
+  const [highlightedSymbol, setHighlightedSymbol] = useState<string | null>(null);
+  const tabRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
   const throwError = useAsyncError();
   const isSelected = (symbol: string) => selected.indexOf(symbol) !== -1;
+
+  const query = new URLSearchParams(useLocation().search);
+  const highlightFromQuery = query.get("highlight");
+  const wlFromQuery = query.get("wl");
 
   // Reset editing when selection changes
   useEffect(() => {
@@ -776,7 +784,7 @@ export default function Watchlist() {
       if (Array.isArray(wls)) {
         let tempWls: Watchlists = {};
         wls.forEach((wl, i) => {
-          if (i === 0) setWlKey(wl.watchlistName);
+          if (i === 0 && !wlFromQuery) setWlKey(wl.watchlistName);
           if (!tempWls[wl.watchlistName]) {
             tempWls[wl.watchlistName] = [];
           }
@@ -792,6 +800,29 @@ export default function Watchlist() {
   useEffect(() => {
     queryWatchLists();
   }, []);
+
+  useEffect(() => {
+    if (wlFromQuery && highlightFromQuery && watchLists[wlFromQuery]) {
+      // Ensure we're viewing the correct watchlist
+      setWlKey(wlFromQuery);
+  
+      // Wait for the tickers to be rendered before highlighting
+      const timeout = setTimeout(() => {
+        setHighlightedSymbol(highlightFromQuery);
+  
+        // Remove highlight after 3s
+        setTimeout(() => setHighlightedSymbol(null), 3000);
+      }, 500);
+  
+      return () => clearTimeout(timeout);
+    }
+  }, [wlFromQuery, highlightFromQuery, watchLists]);
+  
+  useEffect(() => {
+    if (wlKey && tabRefs.current[wlKey]) {
+      tabRefs.current[wlKey]!.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, [wlKey]);  
 
   // Helpers
   const refreshWatchlist = (watchlists: Watchlists) => {
@@ -1436,9 +1467,12 @@ export default function Watchlist() {
           aria-checked={isItemSelected}
           tabIndex={-1}
           key={row.symbol}
+          id={`row-${row.symbol}`}
           selected={isItemSelected}
           sx={{
             cursor: 'pointer',
+            backgroundColor: highlightedSymbol === row.symbol ? 'rgba(214, 209, 209, 0.8)' : 'inherit',
+            transition: 'background-color 0.5s ease',
             '&:hover': { backgroundColor: 'var(--background-light)' }
           }}
         >
@@ -1999,6 +2033,9 @@ export default function Watchlist() {
                   key={key}
                   label={key}
                   value={key}
+                  ref={(el) => {
+                    tabRefs.current[key] = el;
+                  }}
                   sx={{
                     textTransform: 'none',
                     fontWeight: wlKey === key ? 600 : 400
