@@ -20,8 +20,10 @@ interface Notification {
 interface NotificationContextType {
   exactNotifications: Notification[];
   nearNotifications: Notification[];
+  urgentNotifications: Notification[];
   setExactNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
   setNearNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
+  setUrgentNotifications: React.Dispatch<React.SetStateAction<Notification[]>>;
   refreshNotifications: () => void;
   notificationCount: number;
   setNotificationCount: React.Dispatch<React.SetStateAction<number>>;
@@ -34,6 +36,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
   const [exactNotifications, setExactNotifications] = useState<Notification[]>([]);
   const [nearNotifications, setNearNotifications] = useState<Notification[]>([]);
+  const [urgentNotifications, setUrgentNotifications] = useState<Notification[]>([]);
   const [notificationCount, setNotificationCount] = useState(0);
   const [toggle, setToggle] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -51,10 +54,12 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
       let exactMatches: Notification[] = [];
       let nearMatches: Notification[] = [];
+      let urgentMatches: Notification[] = [];
 
       if (!toggle || !toggle.notifications) {
         setExactNotifications([]);
         setNearNotifications([]);
+        setUrgentNotifications([]);
         setNotificationCount(0);
         return;
       }
@@ -80,6 +85,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
               exactMatches.push(notification);
             } else if (absPercentage <= 5) {
               nearMatches.push(notification);
+            } else if (absPercentage > 5) {
+              urgentMatches.push(notification);
             }
           });          
         });
@@ -87,7 +94,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
       setExactNotifications(exactMatches);
       setNearNotifications(nearMatches);
-      setNotificationCount(exactMatches.length + nearMatches.length);
+      setUrgentNotifications(urgentMatches);
+      setNotificationCount(exactMatches.length + nearMatches.length + urgentMatches.length);
     } catch (error) {
       console.error("Error fetching watchlist notifications:", error);
     } finally {
@@ -106,8 +114,10 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       value={{
         exactNotifications,
         nearNotifications,
+        urgentNotifications,
         setExactNotifications,
         setNearNotifications,
+        setUrgentNotifications,
         refreshNotifications: queryWatchLists,
         notificationCount,
         setNotificationCount,
