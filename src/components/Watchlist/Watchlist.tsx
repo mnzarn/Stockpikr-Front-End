@@ -422,9 +422,21 @@ const WatchlistPerformersSummary: React.FC<{
               Top Performer
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="subtitle2" fontWeight={600} color="var(--primary-blue)">
+              <Box
+                component="a"
+                href={`#/quote?symbol=${topPerformer.symbol}`}
+                sx={{
+                  color: 'var(--primary-blue)',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  fontSize: '0.875rem',
+                  '&:hover': {
+                    textDecoration: 'underline'
+                  }
+                }}
+              >
                 {topPerformer.symbol}
-              </Typography>
+              </Box>
               <Typography variant="body2" sx={{ color: 'green', fontWeight: 500 }}>
                 +{(topPerformer.changesPercentage || 0).toFixed(2)}%
               </Typography>
@@ -461,9 +473,21 @@ const WatchlistPerformersSummary: React.FC<{
               Worst Performer
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="subtitle2" fontWeight={600} color="var(--primary-blue)">
+              <Box
+                component="a"
+                href={`#/quote?symbol=${worstPerformer.symbol}`}
+                sx={{
+                  color: 'var(--primary-blue)',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  fontSize: '0.875rem',
+                  '&:hover': {
+                    textDecoration: 'underline'
+                  }
+                }}
+              >
                 {worstPerformer.symbol}
-              </Typography>
+              </Box>
               <Typography variant="body2" sx={{ color: 'red', fontWeight: 500 }}>
                 {(worstPerformer.changesPercentage || 0).toFixed(2)}%
               </Typography>
