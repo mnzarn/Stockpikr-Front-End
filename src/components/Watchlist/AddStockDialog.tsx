@@ -7,10 +7,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  FormControl,
-  FormControlLabel,
-  Radio,
-  RadioGroup,
   TextField,
   Typography,
   useMediaQuery,
@@ -47,7 +43,6 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
 }) => {
   const [sellPrice, setSellPrice] = useState('');
   const [stockInfo, setStockInfo] = useState<IStockQuote>();
-  const [stockTrackingDays, setStockTrackingDays] = useState(90);
   const [wlKey, setWlKey] = useState('');
   const [sellPriceError, setSellPriceError] = useState('');
   const theme = useTheme();
@@ -120,7 +115,6 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
   const onCancelAddStockDialog = () => {
     setSellPrice('');
     setSellPriceError('');
-    setStockTrackingDays(90);
     setAddStockDialog(false);
     // Call onClose if provided
     if (onClose) {
@@ -280,7 +274,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
         )}
 
         {/* Sell Price */}
-        <Box sx={{ mb: 3 }}>
+        <Box>
           <Typography
             variant="body1"
             sx={{
@@ -323,82 +317,6 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
               }
             }}
           />
-        </Box>
-
-        {/* Tracking Period */}
-        <Box>
-          <Typography
-            variant="body1"
-            sx={{
-              mb: 1,
-              fontWeight: 500,
-              color: 'var(--primary-blue)',
-              fontFamily: 'var(--font-family)'
-            }}
-          >
-            Tracking period
-          </Typography>
-
-          <FormControl component="fieldset">
-            <RadioGroup
-              aria-label="tracking-period"
-              name="tracking-period"
-              value={stockTrackingDays}
-              onChange={(e) => setStockTrackingDays(+e.target.value)}
-              row
-            >
-              <FormControlLabel
-                value={90}
-                control={
-                  <Radio
-                    sx={{
-                      color: 'var(--secondary-blue)',
-                      '&.Mui-checked': {
-                        color: 'var(--primary-blue)'
-                      }
-                    }}
-                  />
-                }
-                label="90 days"
-                sx={{
-                  '& .MuiFormControlLabel-label': {
-                    fontFamily: 'var(--font-family)'
-                  }
-                }}
-              />
-              <FormControlLabel
-                value={180}
-                control={
-                  <Radio
-                    sx={{
-                      color: 'var(--secondary-blue)',
-                      '&.Mui-checked': {
-                        color: 'var(--primary-blue)'
-                      }
-                    }}
-                  />
-                }
-                label="180 days"
-                sx={{
-                  '& .MuiFormControlLabel-label': {
-                    fontFamily: 'var(--font-family)'
-                  }
-                }}
-              />
-            </RadioGroup>
-          </FormControl>
-
-          <Typography
-            variant="caption"
-            sx={{
-              display: 'block',
-              mt: 0.5,
-              color: 'var(--secondary-blue)',
-              fontFamily: 'var(--font-family)'
-            }}
-          >
-            This setting controls how long to track the stock for near-term analysis
-          </Typography>
         </Box>
       </DialogContent>
 
