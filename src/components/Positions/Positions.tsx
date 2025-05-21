@@ -1,5 +1,5 @@
 export const validatePositionName = (name: string): { valid: boolean; message: string } => {
-  const validPattern = /^[a-zA-Z0-9\-_\s']+$/;
+  const validPattern = /^[a-zA-Z0-9\-_\s]+$/;
 
   if (!validPattern.test(name)) {
     const invalidChars = name.split('').filter((char) => !validPattern.test(char));
@@ -7,9 +7,7 @@ export const validatePositionName = (name: string): { valid: boolean; message: s
 
     return {
       valid: false,
-      message: `Position name can only contain letters, numbers, hyphens, underscores, spaces, and apostrophes. Invalid characters: ${uniqueInvalidChars.join(
-        ' '
-      )}`
+      message: `Position name can only contain letters, numbers, hyphens, underscores, and spaces. Invalid characters: ${uniqueInvalidChars.join(' ')}`
     };
   }
 
