@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import EditIcon from '@mui/icons-material/Edit';
@@ -499,171 +500,67 @@ const WatchlistPerformersSummary: React.FC<{
   );
 };
 
-// Component for the draggable watchlist item in reorder mode
-interface DraggableWatchlistItemProps {
-  name: string;
+// Draggable Tab Component
+interface DraggableTabProps {
+  label: string;
+  value: string;
   index: number;
-  dragStart: (index: number) => void;
-  dragEnter: (index: number) => void;
-  dragEnd: () => void;
-  isActive: boolean;
+  isSelected: boolean;
+  isReorderMode: boolean;
+  onDragStart: (index: number) => void;
+  onDragOver: (index: number) => void;
+  onDragEnd: () => void;
 }
 
-const DraggableWatchlistItem: React.FC<DraggableWatchlistItemProps> = ({
-  name,
+const DraggableTab: React.FC<DraggableTabProps> = ({
+  label,
+  value,
   index,
-  dragStart,
-  dragEnter,
-  dragEnd,
-  isActive
+  isSelected,
+  isReorderMode,
+  onDragStart,
+  onDragOver,
+  onDragEnd
 }) => {
   return (
     <Box
-      draggable
-      onDragStart={() => dragStart(index)}
-      onDragEnter={() => dragEnter(index)}
-      onDragEnd={dragEnd}
-      onDragOver={(e) => e.preventDefault()}
+      draggable={isReorderMode}
+      onDragStart={() => onDragStart(index)}
+      onDragOver={(e) => {
+        e.preventDefault();
+        onDragOver(index);
+      }}
+      onDragEnd={onDragEnd}
       sx={{
+        padding: '10px 16px',
+        margin: '0 4px',
+        cursor: isReorderMode ? 'grab' : 'pointer',
+        color: isSelected ? 'var(--primary-blue)' : 'var(--secondary-blue)',
+        fontWeight: isSelected ? 600 : 400,
+        backgroundColor: isReorderMode ? 'white' : 'transparent',
+        borderRadius: isReorderMode ? '8px' : '0',
+        border: isReorderMode ? '1px solid var(--border-color)' : 'none',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        p: 1.5,
-        mb: 1,
-        backgroundColor: isActive ? 'var(--background-light)' : 'white',
-        border: '1px solid var(--border-color)',
-        borderRadius: '8px',
-        cursor: 'grab',
-        transition: 'background-color 0.2s ease',
-        '&:hover': {
-          backgroundColor: 'var(--background-light)'
-        },
+        transition: 'all 0.2s ease',
+        boxShadow: isReorderMode ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
         '&:active': {
-          cursor: 'grabbing'
+          cursor: isReorderMode ? 'grabbing' : 'pointer',
+          boxShadow: isReorderMode ? '0 0 2px rgba(0,0,0,0.2)' : 'none',
         }
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <DragIndicatorIcon sx={{ color: 'var(--secondary-blue)', mr: 1.5 }} />
-        <Typography variant="body1" fontWeight={500}>
-          {name}
-        </Typography>
-      </Box>
-    </Box>
-  );
-};
-
-// Reorder Watchlists Dialog Component
-interface ReorderWatchlistsDialogProps {
-  open: boolean;
-  onClose: () => void;
-  watchlistKeys: string[];
-  onSaveOrder: (newOrder: string[]) => void;
-}
-
-const ReorderWatchlistsDialog: React.FC<ReorderWatchlistsDialogProps> = ({
-  open,
-  onClose,
-  watchlistKeys,
-  onSaveOrder
-}) => {
-  const [orderedLists, setOrderedLists] = useState<string[]>([...watchlistKeys]);
-  const [draggedItem, setDraggedItem] = useState<number | null>(null);
-
-  useEffect(() => {
-    // Update when watchlist keys change
-    if (open) {
-      setOrderedLists([...watchlistKeys]);
-    }
-  }, [open, watchlistKeys]);
-
-  const handleDragStart = (index: number) => {
-    setDraggedItem(index);
-  };
-
-  const handleDragEnter = (index: number) => {
-    if (draggedItem === null) return;
-    if (draggedItem !== index) {
-      const newOrder = [...orderedLists];
-      const item = newOrder[draggedItem];
-
-      // Remove item from original position
-      newOrder.splice(draggedItem, 1);
-      // Insert at new position
-      newOrder.splice(index, 0, item);
-
-      setOrderedLists(newOrder);
-      setDraggedItem(index);
-    }
-  };
-
-  const handleDragEnd = () => {
-    setDraggedItem(null);
-  };
-
-  const handleSave = () => {
-    onSaveOrder(orderedLists);
-    onClose();
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth sx={{ '& .MuiPaper-root': { borderRadius: '12px' } }}>
-      <DialogTitle
-        sx={{
-          color: 'var(--primary-blue)',
-          fontFamily: 'var(--font-family)',
-          fontWeight: 600
-        }}
-      >
-        Reorder Watchlists
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText sx={{ mb: 2, color: 'var(--secondary-blue)' }}>
-          Drag and drop to rearrange your watchlists:
-        </DialogContentText>
-        <Box sx={{ mt: 2 }}>
-          {orderedLists.map((name, index) => (
-            <DraggableWatchlistItem
-              key={name}
-              name={name}
-              index={index}
-              dragStart={handleDragStart}
-              dragEnter={handleDragEnter}
-              dragEnd={handleDragEnd}
-              isActive={draggedItem === index}
-            />
-          ))}
-        </Box>
-      </DialogContent>
-      <DialogActions sx={{ p: 2 }}>
-        <Button
-          onClick={onClose}
-          sx={{
+      {isReorderMode && (
+        <DragIndicatorIcon 
+          fontSize="small" 
+          sx={{ 
+            mr: 1,
             color: 'var(--secondary-blue)',
-            textTransform: 'none',
-            fontFamily: 'var(--font-family)',
-            fontWeight: 500
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSave}
-          variant="contained"
-          sx={{
-            bgcolor: 'var(--primary-blue)',
-            textTransform: 'none',
-            fontFamily: 'var(--font-family)',
-            fontWeight: 500,
-            '&:hover': {
-              bgcolor: 'var(--secondary-blue)'
-            }
-          }}
-        >
-          Save Order
-        </Button>
-      </DialogActions>
-    </Dialog>
+          }} 
+        />
+      )}
+      {label}
+    </Box>
   );
 };
 
@@ -675,8 +572,11 @@ export default function Watchlist() {
   const [createWatchlistOpen, setCreateWatchlistOpen] = useState(false);
   const [newWatchlistName, setNewWatchlistName] = useState('');
   const [watchlistNameError, setWatchlistNameError] = useState('');
-  const [reorderWatchlistsOpen, setReorderWatchlistsOpen] = useState(false);
-
+  
+  // Reordering state
+  const [isReorderMode, setIsReorderMode] = useState(false);
+  const dragStartIndex = useRef<number | null>(null);
+  
   // Dialogs state
   const [isAddStockDialog, setAddStockDialog] = useState(false);
   const [isDeleteWatchlistDialog, setDeleteWatchlistDialog] = useState(false);
@@ -718,6 +618,56 @@ export default function Watchlist() {
   const highlightFromQuery = query.get("highlight");
   const wlFromQuery = query.get("wl");
 
+  // Drag and drop handlers for reordering watchlists
+  const toggleReorderMode = () => {
+    const newMode = !isReorderMode;
+    setIsReorderMode(newMode);
+    
+    // Save to localStorage when exiting reorder mode
+    if (!newMode) {
+      try {
+        localStorage.setItem('watchlistOrder', JSON.stringify(wlKeys));
+        console.log('Watchlist order saved to localStorage');
+      } catch (error) {
+        console.error('Error saving watchlist order to localStorage:', error);
+      }
+    }
+  };
+
+  const handleWatchlistDragStart = (index: number) => {
+    dragStartIndex.current = index;
+  };
+
+  const handleWatchlistDragOver = (index: number) => {
+    if (dragStartIndex.current === null || dragStartIndex.current === index) return;
+    
+    const newOrder = [...wlKeys];
+    const draggedItem = newOrder[dragStartIndex.current];
+    
+    // Remove from original position
+    newOrder.splice(dragStartIndex.current, 1);
+    
+    // Insert at new position
+    newOrder.splice(index, 0, draggedItem);
+    
+    // Update state
+    setWlKeys(newOrder);
+    
+    // Update watchlists object
+    const orderedWatchlists: Watchlists = {};
+    newOrder.forEach((key) => {
+      orderedWatchlists[key] = watchLists[key];
+    });
+    setWatchLists(orderedWatchlists);
+    
+    // Update drag index to new position
+    dragStartIndex.current = index;
+  };
+
+  const handleWatchlistDragEnd = () => {
+    dragStartIndex.current = null;
+  };
+
   // Reset editing when selection changes
   useEffect(() => {
     if (selected.length === 0) {
@@ -748,20 +698,9 @@ export default function Watchlist() {
         tickers = tickers.filter((ticker) => (ticker.changesPercentage || 0) < 0);
       }
 
-      // Then apply view-specific filtering/sorting
-      if (viewMode === 'high') {
-        // For high view, keep the primary sort but prioritize high values
-        tickers = [...tickers]; // Keep the current sort
-      } else if (viewMode === 'low') {
-        // For low view, keep the primary sort but prioritize low values
-        tickers = [...tickers]; // Keep the current sort
-      }
-      // New timeframe-specific views will be handled in the column display logic
-
       setVisibleTickers(tickers);
 
       // Update top and worst performers across the entire watchlist
-      // This should be independent of the current filter
       if (watchLists[wlKey].length > 0) {
         const allTickers = [...watchLists[wlKey]];
         // Sort by changes percentage
@@ -825,6 +764,48 @@ export default function Watchlist() {
     queryWatchLists();
   }, []);
 
+  // Load watchlist order from localStorage
+  useEffect(() => {
+    // Only try to restore order if we have watchlists loaded
+    if (wlKeys.length > 0) {
+      try {
+        const savedOrder = localStorage.getItem('watchlistOrder');
+        if (savedOrder) {
+          const parsedOrder = JSON.parse(savedOrder);
+          
+          // Validate the saved order against current watchlists
+          const validOrder = parsedOrder.filter((key: string) => wlKeys.includes(key));
+          
+          // Add any new watchlists that aren't in the saved order
+          wlKeys.forEach(key => {
+            if (!validOrder.includes(key)) {
+              validOrder.push(key);
+            }
+          });
+          
+          if (validOrder.length > 0) {
+            // Update state with the restored order
+            setWlKeys(validOrder);
+            
+            // Recreate watchlists object with the correct order
+            const orderedWatchlists: Watchlists = {};
+            validOrder.forEach((key: string) => {
+              if (watchLists[key]) {
+                orderedWatchlists[key] = watchLists[key];
+              }
+            });
+            
+            if (Object.keys(orderedWatchlists).length > 0) {
+              setWatchLists(orderedWatchlists);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading watchlist order from localStorage:', error);
+      }
+    }
+  }, [wlKeys.length, watchLists]);
+
   useEffect(() => {
     if (wlFromQuery && highlightFromQuery && watchLists[wlFromQuery]) {
       // Ensure we're viewing the correct watchlist
@@ -866,1506 +847,1507 @@ export default function Watchlist() {
     setTimeframeMode(event.target.value as TimeframeMode);
   };
 
-  // Handle saving the reordered watchlists
-  const handleSaveWatchlistOrder = (newOrder: string[]) => {
-    // Save the new order to state
-    setWlKeys(newOrder);
-
-    // Create a new watchlists object with the updated order
-    const orderedWatchlists: Watchlists = {};
-    newOrder.forEach((key) => {
-      orderedWatchlists[key] = watchLists[key];
-    });
-
-    setWatchLists(orderedWatchlists);
-
-    // You might want to persist this order to your backend here
-    // For example:
-    // WatchlistApiService.updateWatchlistOrder(newOrder).catch((error) => {
-    //   console.error('Error updating watchlist order:', error);
-    // });
-  };
-
   // Validate price format: positive number with up to 2 decimal places
   const validateAlertPrice = (price: string | number, symbol: string): boolean => {
     const priceStr = String(price).trim();
-    // First clean up the string (allow trailing decimal point for UX)
-    const cleanedPrice = priceStr.endsWith('.') ? priceStr + '0' : priceStr;
+// First clean up the string (allow trailing decimal point for UX)
+const cleanedPrice = priceStr.endsWith('.') ? priceStr + '0' : priceStr;
 
-    if (!cleanedPrice) {
-      setAlertErrors({ ...alertErrors, [symbol]: 'Price required' });
-      return false;
-    }
+if (!cleanedPrice) {
+  setAlertErrors({ ...alertErrors, [symbol]: 'Price required' });
+  return false;
+}
 
-    // More permissive pattern for validation on blur/submit
-    // This allows valid currency formats like 1, 1.5, 10.99
-    if (!/^[0-9]+(\.[0-9]{0,2})?$/.test(cleanedPrice)) {
-      setAlertErrors({ ...alertErrors, [symbol]: 'Enter a valid price (e.g., 10.99)' });
-      return false;
-    }
+// More permissive pattern for validation on blur/submit
+// This allows valid currency formats like 1, 1.5, 10.99
+if (!/^[0-9]+(\.[0-9]{0,2})?$/.test(cleanedPrice)) {
+  setAlertErrors({ ...alertErrors, [symbol]: 'Enter a valid price (e.g., 10.99)' });
+  return false;
+}
 
-    const numValue = parseFloat(cleanedPrice);
-    if (numValue <= 0) {
-      setAlertErrors({ ...alertErrors, [symbol]: 'Price must be greater than 0' });
-      return false;
-    }
+const numValue = parseFloat(cleanedPrice);
+if (numValue <= 0) {
+  setAlertErrors({ ...alertErrors, [symbol]: 'Price must be greater than 0' });
+  return false;
+}
 
-    // Clear error if valid
-    const newErrors = { ...alertErrors };
-    delete newErrors[symbol];
-    setAlertErrors(newErrors);
-    return true;
-  };
+// Clear error if valid
+const newErrors = { ...alertErrors };
+delete newErrors[symbol];
+setAlertErrors(newErrors);
+return true;
+};
 
-  // Helper functions for sorting
-  function getComparator(
-    order: Order,
-    orderBy: keyof WatchlistTicker
-  ): (a: WatchlistTicker, b: WatchlistTicker) => number {
-    return order === 'desc'
-      ? (a, b) => descendingComparator(a, b, orderBy)
-      : (a, b) => -descendingComparator(a, b, orderBy);
+// Helper functions for sorting
+function getComparator(
+order: Order,
+orderBy: keyof WatchlistTicker
+): (a: WatchlistTicker, b: WatchlistTicker) => number {
+return order === 'desc'
+  ? (a, b) => descendingComparator(a, b, orderBy)
+  : (a, b) => -descendingComparator(a, b, orderBy);
+}
+
+function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
+const valA = a[orderBy];
+const valB = b[orderBy];
+
+// Handle undefined safely
+if (valA == null && valB == null) return 0;
+if (valA == null) return 1;
+if (valB == null) return -1;
+
+if (valB < valA) return -1;
+if (valB > valA) return 1;
+return 0;
+}
+
+// Handle sort order change
+const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof WatchlistTicker) => {
+const isAsc = orderBy === property && order === 'asc';
+setOrder(isAsc ? 'desc' : 'asc');
+setOrderBy(property);
+
+// Force resort with new order
+if (watchLists[wlKey]) {
+  let tickers = [...watchLists[wlKey]];
+  const newOrder = isAsc ? 'desc' : 'asc';
+  tickers.sort(getComparator(newOrder, property));
+
+  // Apply current filter
+  if (filterMode === 'gainers') {
+    tickers = tickers.filter((ticker) => (ticker.changesPercentage || 0) > 0);
+  } else if (filterMode === 'losers') {
+    tickers = tickers.filter((ticker) => (ticker.changesPercentage || 0) < 0);
   }
 
-  function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
-    const valA = a[orderBy];
-    const valB = b[orderBy];
+  setVisibleTickers(tickers);
+}
+};
 
-    // Handle undefined safely
-    if (valA == null && valB == null) return 0;
-    if (valA == null) return 1;
-    if (valB == null) return -1;
+const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+if (event.target.checked && visibleTickers.length > 0) {
+  const newSelected = visibleTickers.map((n) => n.symbol);
+  setSelected(newSelected);
+  return;
+}
+setSelected([]);
+};
 
-    if (valB < valA) return -1;
-    if (valB > valA) return 1;
-    return 0;
+const handleSelectStock = (event: React.MouseEvent<unknown>, symbol: string) => {
+const selectedIndex = selected.indexOf(symbol);
+let newSelected: string[] = [];
+
+if (selectedIndex === -1) {
+  newSelected = newSelected.concat(selected, symbol);
+} else if (selectedIndex === 0) {
+  newSelected = newSelected.concat(selected.slice(1));
+} else if (selectedIndex === selected.length - 1) {
+  newSelected = newSelected.concat(selected.slice(0, -1));
+} else if (selectedIndex > 0) {
+  newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
+}
+setSelected(newSelected);
+};
+
+const handleCreateNewWatchlist = async () => {
+// Reset errors first
+setWatchlistNameError('');
+
+if (newWatchlistName.trim() && watchLists) {
+  // Check if watchlist with this name already exists
+  if (wlKeys.includes(newWatchlistName.trim())) {
+    setWatchlistNameError('A watchlist with this name already exists. Please try another name.');
+    return;
   }
 
-  // Handle sort order change
-  const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof WatchlistTicker) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
+  // Validate watchlist name characters
+  const validation = validateWatchlistName(newWatchlistName.trim());
+  if (!validation.valid) {
+    setWatchlistNameError(validation.message);
+    return;
+  }
 
-    // Force resort with new order
-    if (watchLists[wlKey]) {
-      let tickers = [...watchLists[wlKey]];
-      const newOrder = isAsc ? 'desc' : 'asc';
-      tickers.sort(getComparator(newOrder, property));
-
-      // Apply current filter
-      if (filterMode === 'gainers') {
-        tickers = tickers.filter((ticker) => (ticker.changesPercentage || 0) > 0);
-      } else if (filterMode === 'losers') {
-        tickers = tickers.filter((ticker) => (ticker.changesPercentage || 0) < 0);
-      }
-
-      setVisibleTickers(tickers);
-    }
-  };
-
-  const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.checked && visibleTickers.length > 0) {
-      const newSelected = visibleTickers.map((n) => n.symbol);
-      setSelected(newSelected);
-      return;
-    }
-    setSelected([]);
-  };
-
-  const handleSelectStock = (event: React.MouseEvent<unknown>, symbol: string) => {
-    const selectedIndex = selected.indexOf(symbol);
-    let newSelected: string[] = [];
-
-    if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, symbol);
-    } else if (selectedIndex === 0) {
-      newSelected = newSelected.concat(selected.slice(1));
-    } else if (selectedIndex === selected.length - 1) {
-      newSelected = newSelected.concat(selected.slice(0, -1));
-    } else if (selectedIndex > 0) {
-      newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
-    }
-    setSelected(newSelected);
-  };
-
-  const handleCreateNewWatchlist = async () => {
-    // Reset errors first
-    setWatchlistNameError('');
-
-    if (newWatchlistName.trim() && watchLists) {
-      // Check if watchlist with this name already exists
-      if (wlKeys.includes(newWatchlistName.trim())) {
-        setWatchlistNameError('A watchlist with this name already exists. Please try another name.');
-        return;
-      }
-
-      // Validate watchlist name characters
-      const validation = validateWatchlistName(newWatchlistName.trim());
-      if (!validation.valid) {
-        setWatchlistNameError(validation.message);
-        return;
-      }
-
-      try {
-        const userID: string = await getUserID();
-        const name = await WatchlistApiService.createWatchlist({
-          watchlistName: newWatchlistName.trim(),
-          tickers: [],
-          userID
-        });
-
-        if (!name) {
-          throw Error('Watchlist Id is empty after creating');
-        }
-
-        watchLists[newWatchlistName.trim()] = [];
-        refreshWatchlist(watchLists);
-        setWlKey(newWatchlistName.trim());
-        setCreateWatchlistOpen(false);
-        setNewWatchlistName('');
-      } catch (error) {
-        throwError(error);
-      }
-    }
-  };
-
-  const handleCloseDeleteWatchlistDialog = (name?: string) => {
-    if (name && watchLists) {
-      try {
-        // Use the exact name as is - special characters shouldn't be a problem for object keys
-        delete watchLists[name];
-
-        // Get remaining keys
-        const remainingKeys = Object.keys(watchLists);
-
-        // Update the watchlists state
-        refreshWatchlist({ ...watchLists });
-
-        // Select another watchlist if available
-        setWlKey(remainingKeys.length > 0 ? remainingKeys[0] : '');
-
-        // Also ensure that the backend is updated
-        WatchlistApiService.deleteWatchlist(name).catch((error) => {
-          console.error('Error deleting watchlist from server:', error);
-        });
-      } catch (error) {
-        console.error('Error deleting watchlist:', error);
-        // Optionally show an error message to the user
-      }
-    }
-    setDeleteWatchlistDialog(false);
-  };
-
-  const handleClickAddStock = () => {
-    setSearchReady(true);
-    setAddStockDialog(true);
-  };
-
-  // Update the handle close method for the AddStockDialog
-  const handleCloseAddStockDialog = () => {
-    setAddStockDialog(false);
-    // Reset states after dialog closes
-    setAddStockSymbol('');
-    setSearchReady(false);
-  };
-
-  const handleDeleteStocks = async () => {
-    try {
-      // Optimistically update UI first
-      const tickers = watchLists[wlKey].filter((ticker) => !selected.includes(ticker.symbol));
-      watchLists[wlKey] = tickers;
-      refreshWatchlist({ ...watchLists });
-
-      let newAlertData = { ...alertData };
-      for (const symbol of selected) {
-        delete newAlertData[symbol];
-      }
-      setAlertData(newAlertData);
-
-      let newAlertErrors = { ...alertErrors };
-      for (const symbol of selected) {
-        delete newAlertErrors[symbol];
-      }
-      setAlertErrors(newAlertErrors);
-
-      const selectedCopy = [...selected]; // Save a copy before clearing
-      setSelected([]);
-
-      // Then perform the server request in the background
-      await WatchlistApiService.deleteStocksInWatchlist(wlKey, selectedCopy);
-    } catch (error) {
-      console.error('Error deleting stocks:', error);
-      // In a real app, you might want to show an error toast here
-    }
-  };
-
-  // Enter edit mode and initialize editing values for all selected stocks
-  const handleEnterEditMode = () => {
-    setEditMode(true);
-
-    const initialValues: { [key: string]: string } = {};
-    selected.forEach((symbol) => {
-      const ticker = watchLists[wlKey].find((t) => t.symbol === symbol);
-      if (ticker) {
-        initialValues[symbol] = ticker.alertPrice != null ? String(ticker.alertPrice.toFixed(2)) : '';
-      }
+  try {
+    const userID: string = await getUserID();
+    const name = await WatchlistApiService.createWatchlist({
+      watchlistName: newWatchlistName.trim(),
+      tickers: [],
+      userID
     });
-    setEditingValues(initialValues);
-  };
 
-  const handleEditStocks = async () => {
-    if (editMode) {
-      // Save changes
-      // Validate all selected alert prices before submitting
-      let hasError = false;
-
-      for (const symbol of selected) {
-        const priceValue = editingValues[symbol] || String(alertData[symbol] || '');
-        const isValid = validateAlertPrice(priceValue, symbol);
-        if (!isValid) {
-          hasError = true;
-        }
-      }
-
-      if (hasError) {
-        return; // Don't proceed if there are validation errors
-      }
-
-      try {
-        // Convert editing values to numbers for the API call
-        const tickers: MinimalWatchlistTicker[] = selected.map((symbol) => {
-          const price =
-            editingValues[symbol] !== undefined && editingValues[symbol] !== ''
-              ? parseFloat(editingValues[symbol])
-              : alertData[symbol];
-
-          return {
-            symbol,
-            alertPrice: price
-          };
-        });
-
-        await WatchlistApiService.editStockAlertPrices(tickers, wlKey);
-
-        // Refresh watchlist data
-        const updatedWatchlist = await WatchlistApiService.fetchWatchlist(wlKey);
-        if (updatedWatchlist) {
-          watchLists[wlKey] = updatedWatchlist.tickers;
-          refreshWatchlist({ ...watchLists });
-        }
-
-        // Exit edit mode and clear editing values
-        setEditMode(false);
-        setEditingValues({});
-      } catch (error) {
-        throwError(error);
-      }
-    } else {
-      // Enter edit mode
-      handleEnterEditMode();
-    }
-  };
-
-  // Handler for view mode changes with new timeframe options
-  const handleViewModeChange = (event: React.MouseEvent<HTMLElement>, newMode: ViewMode | null) => {
-    if (newMode !== null) {
-      setViewMode(newMode);
-
-      // Update timeframe if a timeframe-specific view is selected
-      if (['90d', '180d', '1y', '3y', '5y'].includes(newMode)) {
-        setTimeframeMode(newMode as TimeframeMode);
-      }
-    }
-  };
-
-  const handleWatchlistChange = (event: React.SyntheticEvent, newValue: string) => {
-    setWlKey(newValue);
-  };
-
-  // Format percentage value with trend icon
-  const renderPercentage = (value: number | null) => {
-    // Handle null or undefined values
-    if (value === null || value === undefined) {
-      return (
-        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
-          <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
-          0.00%
-        </Box>
-      );
+    if (!name) {
+      throw Error('Watchlist Id is empty after creating');
     }
 
-    const isPositive = value >= 0;
-    return (
-      <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
-        {isPositive ? (
-          <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
+    watchLists[newWatchlistName.trim()] = [];
+    refreshWatchlist(watchLists);
+    setWlKey(newWatchlistName.trim());
+    setCreateWatchlistOpen(false);
+    setNewWatchlistName('');
+  } catch (error) {
+    throwError(error);
+  }
+}
+};
+
+const handleCloseDeleteWatchlistDialog = (name?: string) => {
+if (name && watchLists) {
+  try {
+    // Use the exact name as is - special characters shouldn't be a problem for object keys
+    delete watchLists[name];
+
+    // Get remaining keys
+    const remainingKeys = Object.keys(watchLists);
+
+    // Update the watchlists state
+    refreshWatchlist({ ...watchLists });
+
+    // Select another watchlist if available
+    setWlKey(remainingKeys.length > 0 ? remainingKeys[0] : '');
+
+    // Also ensure that the backend is updated
+    WatchlistApiService.deleteWatchlist(name).catch((error) => {
+      console.error('Error deleting watchlist from server:', error);
+    });
+  } catch (error) {
+    console.error('Error deleting watchlist:', error);
+    // Optionally show an error message to the user
+  }
+}
+setDeleteWatchlistDialog(false);
+};
+
+const handleClickAddStock = () => {
+setSearchReady(true);
+setAddStockDialog(true);
+};
+
+// Update the handle close method for the AddStockDialog
+const handleCloseAddStockDialog = () => {
+setAddStockDialog(false);
+// Reset states after dialog closes
+setAddStockSymbol('');
+setSearchReady(false);
+};
+
+const handleDeleteStocks = async () => {
+try {
+  // Optimistically update UI first
+  const tickers = watchLists[wlKey].filter((ticker) => !selected.includes(ticker.symbol));
+  watchLists[wlKey] = tickers;
+  refreshWatchlist({ ...watchLists });
+
+  let newAlertData = { ...alertData };
+  for (const symbol of selected) {
+    delete newAlertData[symbol];
+  }
+  setAlertData(newAlertData);
+
+  let newAlertErrors = { ...alertErrors };
+  for (const symbol of selected) {
+    delete newAlertErrors[symbol];
+  }
+  setAlertErrors(newAlertErrors);
+
+  const selectedCopy = [...selected]; // Save a copy before clearing
+  setSelected([]);
+
+  // Then perform the server request in the background
+  await WatchlistApiService.deleteStocksInWatchlist(wlKey, selectedCopy);
+} catch (error) {
+  console.error('Error deleting stocks:', error);
+  // In a real app, you might want to show an error toast here
+}
+};
+
+// Enter edit mode and initialize editing values for all selected stocks
+const handleEnterEditMode = () => {
+setEditMode(true);
+
+const initialValues: { [key: string]: string } = {};
+selected.forEach((symbol) => {
+  const ticker = watchLists[wlKey].find((t) => t.symbol === symbol);
+  if (ticker) {
+    initialValues[symbol] = ticker.alertPrice != null ? String(ticker.alertPrice.toFixed(2)) : '';
+  }
+});
+setEditingValues(initialValues);
+};
+
+const handleEditStocks = async () => {
+if (editMode) {
+  // Save changes
+  // Validate all selected alert prices before submitting
+  let hasError = false;
+
+  for (const symbol of selected) {
+    const priceValue = editingValues[symbol] || String(alertData[symbol] || '');
+    const isValid = validateAlertPrice(priceValue, symbol);
+    if (!isValid) {
+      hasError = true;
+    }
+  }
+
+  if (hasError) {
+    return; // Don't proceed if there are validation errors
+  }
+
+  try {
+    // Convert editing values to numbers for the API call
+    const tickers: MinimalWatchlistTicker[] = selected.map((symbol) => {
+      const price =
+        editingValues[symbol] !== undefined && editingValues[symbol] !== ''
+          ? parseFloat(editingValues[symbol])
+          : alertData[symbol];
+
+      return {
+        symbol,
+        alertPrice: price
+      };
+    });
+
+    await WatchlistApiService.editStockAlertPrices(tickers, wlKey);
+
+    // Refresh watchlist data
+    const updatedWatchlist = await WatchlistApiService.fetchWatchlist(wlKey);
+    if (updatedWatchlist) {
+      watchLists[wlKey] = updatedWatchlist.tickers;
+      refreshWatchlist({ ...watchLists });
+    }
+
+    // Exit edit mode and clear editing values
+    setEditMode(false);
+    setEditingValues({});
+  } catch (error) {
+    throwError(error);
+  }
+} else {
+  // Enter edit mode
+  handleEnterEditMode();
+}
+};
+
+const handleWatchlistChange = (event: React.SyntheticEvent, newValue: string) => {
+setWlKey(newValue);
+};
+
+// Handler for view mode changes with new timeframe options
+const handleViewModeChange = (event: React.MouseEvent<HTMLElement>, newMode: ViewMode | null) => {
+if (newMode !== null) {
+  setViewMode(newMode);
+
+  // Update timeframe if a timeframe-specific view is selected
+  if (['90d', '180d', '1y', '3y', '5y'].includes(newMode)) {
+    setTimeframeMode(newMode as TimeframeMode);
+  }
+}
+};
+
+// Format percentage value with trend icon
+const renderPercentage = (value: number | null) => {
+// Handle null or undefined values
+if (value === null || value === undefined) {
+  return (
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+      <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
+      0.00%
+    </Box>
+  );
+}
+
+const isPositive = value >= 0;
+return (
+  <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+    {isPositive ? (
+      <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
+    ) : (
+      <TrendingDownIcon fontSize="small" sx={{ mr: 0.5 }} />
+    )}
+    {Math.abs(value).toFixed(2)}%
+  </Box>
+);
+};
+
+// Helper to get the display label for timeframe mode
+const getTimeframeLabel = (mode: TimeframeMode): string => {
+switch (mode) {
+  case '90d': return '90 Days';
+  case '180d': return '180 Days';
+  case '1y': return '1 Year';
+  case '3y': return '3 Years';
+  case '5y': return '5 Years';
+  default: return '1 Year';
+}
+};
+
+// Helper to get the appropriate high/low values based on timeframe
+const getTimeframeHighValue = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
+switch (timeframe) {
+  case '90d': return ticker.ninetyDayHigh || null;
+  case '180d': return ticker.oneEightyDayHigh || null;
+  case '1y': return ticker.yearHigh || null;
+  case '3y': return ticker.threeYearHigh || null;
+  case '5y': return ticker.fiveYearHigh || null;
+  default: return ticker.yearHigh || null;
+}
+};
+
+const getTimeframeLowValue = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
+switch (timeframe) {
+  case '90d': return ticker.ninetyDayLow || null;
+  case '180d': return ticker.oneEightyDayLow || null;
+  case '1y': return ticker.yearLow || null;
+  case '3y': return ticker.threeYearLow || null;
+  case '5y': return ticker.fiveYearLow || null;
+  default: return ticker.yearLow || null;
+}
+};
+
+// Calculate percentage off high/low for selected timeframe
+const getTimeframeHighPercentage = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
+const high = getTimeframeHighValue(ticker, timeframe);
+if (high === null || ticker.price === null) return null;
+return ((high - ticker.price) / high) * 100;
+};
+
+const getTimeframeLowPercentage = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
+const low = getTimeframeLowValue(ticker, timeframe);
+if (low === null || ticker.price === null) return null;
+return ((ticker.price - low) / low) * 100;
+};
+
+// Calculate dollar deviation from alert price
+const getAlertPriceDeviation = (ticker: WatchlistTicker): number | null => {
+if (ticker.price === null || ticker.alertPrice === null) return null;
+return ticker.price - ticker.alertPrice;
+};
+
+// Define columns based on view mode with enhanced timeframe support
+const getColumnsForView = (mode: ViewMode) => {
+// Core columns that appear in all views
+const coreColumns = [
+  { id: 'symbol', label: 'Symbol', align: 'left' },
+  { id: 'alertPrice', label: 'Alert Price', align: 'right' },
+  { id: 'price', label: 'Current Price', align: 'right' },
+  {
+    id: 'alertPriceDeviationPercent',
+    label: 'Alert Deviation %',
+    align: 'right',
+    tooltip: 'Percentage difference between current price and alert price: ((Current Price - Alert Price) / Alert Price) * 100%'
+  }
+];
+
+// Timeframe-specific views (90d, 180d, 1y, 3y, 5y)
+if (['90d', '180d', '1y', '3y', '5y'].includes(mode)) {
+  return [
+    ...coreColumns,
+    {
+      id: `${mode}High`,
+      label: `${getTimeframeLabel(mode as TimeframeMode)} High`,
+      align: 'right',
+      timeframe: mode as TimeframeMode
+    },
+    {
+      id: `${mode}HighVsCurrentPercentage`,
+      label: `Off ${getTimeframeLabel(mode as TimeframeMode)} High %`,
+      align: 'right',
+      tooltip: `Percentage difference between current price and ${getTimeframeLabel(mode as TimeframeMode)} high`,
+      timeframe: mode as TimeframeMode
+    },
+    {
+      id: `${mode}Low`,
+      label: `${getTimeframeLabel(mode as TimeframeMode)} Low`,
+      align: 'right',
+      timeframe: mode as TimeframeMode
+    },
+    {
+      id: `${mode}LowVsCurrentPercentage`,
+      label: `Off ${getTimeframeLabel(mode as TimeframeMode)} Low %`,
+      align: 'right',
+      tooltip: `Percentage difference between current price and ${getTimeframeLabel(mode as TimeframeMode)} low`,
+      timeframe: mode as TimeframeMode
+    }
+  ];
+}
+
+// Original view modes (full, high, low)
+if (mode === 'full') {
+  return [
+    ...coreColumns,
+    { id: 'yearHigh', label: 'Year High', align: 'right' },
+    {
+      id: 'yearHighVsCurrentPercentage',
+      label: 'Off 1Y High %',
+      align: 'right',
+      tooltip: 'Percentage difference between current price and year high: ((Year High - Current Price) / Year High) * 100%'
+    },
+    { id: 'fiveYearHigh', label: '5 Year High', align: 'right' },
+    {
+      id: 'fiveYearHighVsCurrentPercentage',
+      label: 'Off 5Y High %',
+      align: 'right',
+      tooltip: 'Percentage difference between current price and 5-year high: ((5Y High - Current Price) / 5Y High) * 100%'
+    },
+    { id: 'yearLow', label: 'Year Low', align: 'right' },
+    {
+      id: 'yearLowVsCurrentPercentage',
+      label: 'Off 1Y Low %',
+      align: 'right',
+      tooltip: 'Percentage difference between current price and year low: ((Current Price - Year Low) / Year Low) * 100%'
+    },
+    { id: 'fiveYearLow', label: '5 Year Low', align: 'right' },
+    {
+      id: 'fiveYearLowVsCurrentPercentage',
+      label: 'Off 5Y Low %',
+      align: 'right',
+      tooltip: 'Percentage difference between current price and 5-year low: ((Current Price - 5Y Low) / 5Y Low) * 100%'
+    }
+  ];
+} else if (mode === 'high') {
+  return [
+    ...coreColumns,
+    { id: 'yearHigh', label: 'Year High', align: 'right' },
+    {
+      id: 'yearHighVsCurrentPercentage',
+      label: 'Off 1Y High %',
+      align: 'right',
+      tooltip: 'Percentage difference between current price and year high: ((Year High - Current Price) / Year High) * 100%'
+    },
+    { id: 'fiveYearHigh', label: '5 Year High', align: 'right' },
+    {
+      id: 'fiveYearHighVsCurrentPercentage',
+      label: 'Off 5Y High %',
+      align: 'right',
+      tooltip: 'Percentage difference between current price and 5-year high: ((5Y High - Current Price) / 5Y High) * 100%'
+    }
+  ];
+} else {
+  // low mode
+  return [
+    ...coreColumns,
+    { id: 'yearLow', label: 'Year Low', align: 'right' },
+    {
+      id: 'yearLowVsCurrentPercentage',
+      label: 'Off 1Y Low %',
+      align: 'right',
+      tooltip: 'Percentage difference between current price and year low: ((Current Price - Year Low) / Year Low) * 100%'
+    },
+    { id: 'fiveYearLow', label: '5 Year Low', align: 'right' },
+    {
+      id: 'fiveYearLowVsCurrentPercentage',
+      label: 'Off 5Y Low %',
+      align: 'right',
+      tooltip: 'Percentage difference between current price and 5-year low: ((Current Price - 5Y Low) / 5Y Low) * 100%'
+    }
+  ];
+}
+};
+
+// Render table rows with stock data
+const renderTable = () => {
+if (!wlKey) {
+  return (
+    <TableRow>
+      <TableCell colSpan={12} align="center">
+        <Typography sx={{ py: 3, color: 'var(--secondary-blue)' }}>
+          Select or create a watchlist to get started.
+        </Typography>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+if (visibleTickers.length === 0) {
+  // Show different messages based on filter mode
+  let message = 'No stocks in this watchlist. Use the search bar above to add stocks.';
+
+  if (filterMode === 'gainers' && watchLists[wlKey]?.length > 0) {
+    message = 'No gaining stocks found. Try changing the filter to see all stocks.';
+  } else if (filterMode === 'losers' && watchLists[wlKey]?.length > 0) {
+    message = 'No losing stocks found. Try changing the filter to see all stocks.';
+  }
+
+  return (
+    <TableRow>
+      <TableCell colSpan={12} align="center">
+        <Typography sx={{ py: 3, color: 'var(--secondary-blue)' }}>{message}</Typography>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+return visibleTickers.map((row, index) => {
+  const isItemSelected = isSelected(row.symbol);
+  const labelId = `enhanced-table-checkbox-${index}`;
+
+  return (
+    <TableRow
+      hover
+      onClick={(event) => handleSelectStock(event, row.symbol)}
+      role="checkbox"
+      aria-checked={isItemSelected}
+      tabIndex={-1}
+      key={row.symbol}
+      id={`row-${row.symbol}`}
+      selected={isItemSelected}
+      sx={{
+        cursor: 'pointer',
+        backgroundColor: highlightedSymbol === row.symbol ? 'rgba(214, 209, 209, 0.8)' : 'inherit',
+        transition: 'background-color 0.5s ease',
+        '&:hover': { backgroundColor: 'var(--background-light)' }
+      }}
+    >
+      <TableCell padding="checkbox">
+        <Checkbox color="primary" checked={isItemSelected} inputProps={{ 'aria-labelledby': labelId }} />
+      </TableCell>
+
+      <TableCell align="center" padding="none">
+        {row.alertPrice != null ? (
+          <Tooltip title="Alert price set">
+            <NotificationsIcon
+              sx={{
+                color: 'white',
+                backgroundColor: 'var(--primary-blue)',
+                borderRadius: '50%',
+                padding: '4px',
+                fontSize: '20px'
+              }}
+            />
+          </Tooltip>
         ) : (
-          <TrendingDownIcon fontSize="small" sx={{ mr: 0.5 }} />
+          <Tooltip title="No alert price">
+            <NotificationsNoneIcon
+              sx={{
+                color: 'var(--primary-blue)',
+                fontSize: '20px'
+              }}
+            />
+          </Tooltip>
         )}
-        {Math.abs(value).toFixed(2)}%
-      </Box>
-    );
-  };
+      </TableCell>
 
-  // Helper to get the display label for timeframe mode
-  const getTimeframeLabel = (mode: TimeframeMode): string => {
-    switch (mode) {
-      case '90d':
-        return '90 Days';
-      case '180d':
-        return '180 Days';
-      case '1y':
-        return '1 Year';
-      case '3y':
-        return '3 Years';
-      case '5y':
-        return '5 Years';
-      default:
-        return '1 Year';
-    }
-  };
-
-  // Helper to get the appropriate high/low values based on timeframe
-  const getTimeframeHighValue = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
-    switch (timeframe) {
-      case '90d':
-        return ticker.ninetyDayHigh || null;
-      case '180d':
-        return ticker.oneEightyDayHigh || null;
-      case '1y':
-        return ticker.yearHigh || null;
-      case '3y':
-        return ticker.threeYearHigh || null;
-      case '5y':
-        return ticker.fiveYearHigh || null;
-      default:
-        return ticker.yearHigh || null;
-    }
-  };
-
-  const getTimeframeLowValue = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
-    switch (timeframe) {
-      case '90d':
-        return ticker.ninetyDayLow || null;
-      case '180d':
-        return ticker.oneEightyDayLow || null;
-      case '1y':
-        return ticker.yearLow || null;
-      case '3y':
-        return ticker.threeYearLow || null;
-      case '5y':
-        return ticker.fiveYearLow || null;
-      default:
-        return ticker.yearLow || null;
-    }
-  };
-
-  // Calculate percentage off high/low for selected timeframe
-  const getTimeframeHighPercentage = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
-    const high = getTimeframeHighValue(ticker, timeframe);
-    if (high === null || ticker.price === null) return null;
-    return ((high - ticker.price) / high) * 100;
-  };
-
-  const getTimeframeLowPercentage = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
-    const low = getTimeframeLowValue(ticker, timeframe);
-    if (low === null || ticker.price === null) return null;
-    return ((ticker.price - low) / low) * 100;
-  };
-
-  // Calculate dollar deviation from alert price
-  const getAlertPriceDeviation = (ticker: WatchlistTicker): number | null => {
-    if (ticker.price === null || ticker.alertPrice === null) return null;
-    return ticker.price - ticker.alertPrice;
-  };
-
-  // Define columns based on view mode with enhanced timeframe support
-  const getColumnsForView = (mode: ViewMode) => {
-    // Core columns that appear in all views
-    const coreColumns = [
-      { id: 'symbol', label: 'Symbol', align: 'left' },
-      { id: 'alertPrice', label: 'Alert Price', align: 'right' },
-      { id: 'price', label: 'Current Price', align: 'right' },
-      {
-        id: 'alertPriceDeviationPercent', // Update ID to match the new function
-        label: 'Alert Deviation %', // Update label
-        align: 'right',
-        tooltip:
-          'Percentage difference between current price and alert price: ((Current Price - Alert Price) / Alert Price) * 100%'
-      }
-    ];
-
-    // Timeframe-specific views (90d, 180d, 1y, 3y, 5y)
-    if (['90d', '180d', '1y', '3y', '5y'].includes(mode)) {
-      // Return columns specific to the selected timeframe
-      return [
-        ...coreColumns,
-        {
-          id: `${mode}High`,
-          label: `${getTimeframeLabel(mode as TimeframeMode)} High`,
-          align: 'right',
-          timeframe: mode as TimeframeMode
-        },
-        {
-          id: `${mode}HighVsCurrentPercentage`,
-          label: `Off ${getTimeframeLabel(mode as TimeframeMode)} High %`,
-          align: 'right',
-          tooltip: `Percentage difference between current price and ${getTimeframeLabel(mode as TimeframeMode)} high`,
-          timeframe: mode as TimeframeMode
-        },
-        {
-          id: `${mode}Low`,
-          label: `${getTimeframeLabel(mode as TimeframeMode)} Low`,
-          align: 'right',
-          timeframe: mode as TimeframeMode
-        },
-        {
-          id: `${mode}LowVsCurrentPercentage`,
-          label: `Off ${getTimeframeLabel(mode as TimeframeMode)} Low %`,
-          align: 'right',
-          tooltip: `Percentage difference between current price and ${getTimeframeLabel(mode as TimeframeMode)} low`,
-          timeframe: mode as TimeframeMode
-        }
-      ];
-    }
-
-    // Original view modes (full, high, low)
-    if (mode === 'full') {
-      return [
-        ...coreColumns,
-        {
-          id: 'yearHigh',
-          label: 'Year High',
-          align: 'right'
-        },
-        {
-          id: 'yearHighVsCurrentPercentage',
-          label: 'Off 1Y High %',
-          align: 'right',
-          tooltip:
-            'Percentage difference between current price and year high: ((Year High - Current Price) / Year High) * 100%'
-        },
-        {
-          id: 'fiveYearHigh',
-          label: '5 Year High',
-          align: 'right'
-        },
-        {
-          id: 'fiveYearHighVsCurrentPercentage',
-          label: 'Off 5Y High %',
-          align: 'right',
-          tooltip:
-            'Percentage difference between current price and 5-year high: ((5Y High - Current Price) / 5Y High) * 100%'
-        },
-        {
-          id: 'yearLow',
-          label: 'Year Low',
-          align: 'right'
-        },
-        {
-          id: 'yearLowVsCurrentPercentage',
-          label: 'Off 1Y Low %',
-          align: 'right',
-          tooltip:
-            'Percentage difference between current price and year low: ((Current Price - Year Low) / Year Low) * 100%'
-        },
-        {
-          id: 'fiveYearLow',
-          label: '5 Year Low',
-          align: 'right'
-        },
-        {
-          id: 'fiveYearLowVsCurrentPercentage',
-          label: 'Off 5Y Low %',
-          align: 'right',
-          tooltip:
-            'Percentage difference between current price and 5-year low: ((Current Price - 5Y Low) / 5Y Low) * 100%'
-        }
-      ];
-    } else if (mode === 'high') {
-      return [
-        ...coreColumns,
-        {
-          id: 'yearHigh',
-          label: 'Year High',
-          align: 'right'
-        },
-        {
-          id: 'yearHighVsCurrentPercentage',
-          label: 'Off 1Y High %',
-          align: 'right',
-          tooltip:
-            'Percentage difference between current price and year high: ((Year High - Current Price) / Year High) * 100%'
-        },
-        {
-          id: 'fiveYearHigh',
-          label: '5 Year High',
-          align: 'right'
-        },
-        {
-          id: 'fiveYearHighVsCurrentPercentage',
-          label: 'Off 5Y High %',
-          align: 'right',
-          tooltip:
-            'Percentage difference between current price and 5-year high: ((5Y High - Current Price) / 5Y High) * 100%'
-        }
-      ];
-    } else {
-      // low mode
-      return [
-        ...coreColumns,
-        {
-          id: 'yearLow',
-          label: 'Year Low',
-          align: 'right'
-        },
-        {
-          id: 'yearLowVsCurrentPercentage',
-          label: 'Off 1Y Low %',
-          align: 'right',
-          tooltip:
-            'Percentage difference between current price and year low: ((Current Price - Year Low) / Year Low) * 100%'
-        },
-        {
-          id: 'fiveYearLow',
-          label: '5 Year Low',
-          align: 'right'
-        },
-        {
-          id: 'fiveYearLowVsCurrentPercentage',
-          label: 'Off 5Y Low %',
-          align: 'right',
-          tooltip:
-            'Percentage difference between current price and 5-year low: ((Current Price - 5Y Low) / 5Y Low) * 100%'
-        }
-      ];
-    }
-  };
-
-  // Updated renderTable function with improved border styling
-  const renderTable = () => {
-    if (!wlKey) {
-      return (
-        <TableRow>
-          <TableCell colSpan={12} align="center">
-            <Typography sx={{ py: 3, color: 'var(--secondary-blue)' }}>
-              Select or create a watchlist to get started.
-            </Typography>
-          </TableCell>
-        </TableRow>
-      );
-    }
-
-    if (visibleTickers.length === 0) {
-      // Show different messages based on filter mode
-      let message = 'No stocks in this watchlist. Use the search bar above to add stocks.';
-
-      if (filterMode === 'gainers' && watchLists[wlKey]?.length > 0) {
-        message = 'No gaining stocks found. Try changing the filter to see all stocks.';
-      } else if (filterMode === 'losers' && watchLists[wlKey]?.length > 0) {
-        message = 'No losing stocks found. Try changing the filter to see all stocks.';
-      }
-
-      return (
-        <TableRow>
-          <TableCell colSpan={12} align="center">
-            <Typography sx={{ py: 3, color: 'var(--secondary-blue)' }}>{message}</Typography>
-          </TableCell>
-        </TableRow>
-      );
-    }
-
-    return visibleTickers.map((row, index) => {
-      const isItemSelected = isSelected(row.symbol);
-      const labelId = `enhanced-table-checkbox-${index}`;
-
-      // Calculate alert price deviation in dollars
-      const alertDeviation = getAlertPriceDeviation(row);
-
-      return (
-        <TableRow
-          hover
-          onClick={(event) => handleSelectStock(event, row.symbol)}
-          role="checkbox"
-          aria-checked={isItemSelected}
-          tabIndex={-1}
-          key={row.symbol}
-          id={`row-${row.symbol}`}
-          selected={isItemSelected}
-          sx={{
-            cursor: 'pointer',
-            backgroundColor: highlightedSymbol === row.symbol ? 'rgba(214, 209, 209, 0.8)' : 'inherit',
-            transition: 'background-color 0.5s ease',
-            '&:hover': { backgroundColor: 'var(--background-light)' }
+      {/* Symbol with hover details */}
+      <TableCell>
+        <Tooltip
+          title={<StockDetailsTooltip row={row} />}
+          arrow
+          placement="right-start"
+          PopperProps={{
+            sx: {
+              '& .MuiTooltip-tooltip': {
+                backgroundColor: 'white',
+                color: 'inherit',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                p: 0
+              }
+            }
           }}
         >
-          <TableCell padding="checkbox">
-            <Checkbox color="primary" checked={isItemSelected} inputProps={{ 'aria-labelledby': labelId }} />
-          </TableCell>
+          <Box
+            component="a"
+            href={`#/quote?symbol=${row.symbol}`}
+            sx={{
+              color: 'var(--primary-blue)',
+              fontWeight: 600,
+              textDecoration: 'none',
+              '&:hover': {
+                textDecoration: 'underline'
+              }
+            }}
+          >
+            {row.symbol}
+          </Box>
+        </Tooltip>
+      </TableCell>
 
-          <TableCell align="center" padding="none">
+      {/* Alert Price */}
+      <TableCell align="right">
+        {editMode && isItemSelected ? (
+          <TextField
+            value={editingValues[row.symbol] || ''}
+            error={!!alertErrors[row.symbol]}
+            helperText={alertErrors[row.symbol]}
+            size="small"
+            type="text"
+            variant="outlined"
+            autoFocus={selected.length === 1}
+            InputProps={{
+              sx: {
+                height: '32px',
+                width: '100px',
+                fontWeight: 500,
+                '& input': { textAlign: 'right' }
+              }
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (
+                editingValues[row.symbol] === String(row.alertPrice != null ? row.alertPrice.toFixed(2) : '0.00') ||
+                editingValues[row.symbol] === undefined
+              ) {
+                setEditingValues({
+                  ...editingValues,
+                  [row.symbol]: ''
+                });
+              }
+            }}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === '' || /^[0-9]*\.?[0-9]*$/.test(value)) {
+                setEditingValues({
+                  ...editingValues,
+                  [row.symbol]: value
+                });
+              }
+            }}
+            onBlur={(e) => {
+              if (editingValues[row.symbol] === '') {
+                setEditingValues({
+                  ...editingValues,
+                  [row.symbol]: String(row.alertPrice != null ? row.alertPrice.toFixed(2) : '0.00')
+                });
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                handleEditStocks();
+              } else if (e.key === 'Escape') {
+                setEditMode(false);
+                setEditingValues({});
+              }
+            }}
+          />
+        ) : (
+          <Box
+            sx={{
+              display: 'inline-block',
+              minWidth: '80px',
+              p: '4px 8px',
+              borderRadius: '4px',
+              color: row.alertPrice == null ? 'var(--secondary-blue)' : 'inherit',
+              fontStyle: 'normal',
+              cursor: row.alertPrice == null ? 'pointer' : 'default',
+              textAlign: 'center'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!editMode && row.alertPrice == null) {
+                setSelected([row.symbol]);
+                handleEnterEditMode();
+              }
+            }}
+          >
             {row.alertPrice != null ? (
-              <Tooltip title="Alert price set">
-                <NotificationsIcon
-                  sx={{
-                    color: 'white',
-                    backgroundColor: 'var(--primary-blue)',
-                    borderRadius: '50%',
-                    padding: '4px',
-                    fontSize: '20px'
-                  }}
-                />
-              </Tooltip>
+              `$${row.alertPrice.toFixed(2)}`
             ) : (
-              <Tooltip title="No alert price">
-                <NotificationsNoneIcon
-                  sx={{
-                    color: 'var(--primary-blue)',
-                    fontSize: '20px'
-                  }}
-                />
-              </Tooltip>
+              <>
+                No price set
+                <br />
+                <span style={{ fontWeight: 500 }}>click to add</span>
+              </>
             )}
-          </TableCell>
+          </Box>
+        )}
+      </TableCell>
 
-          {/* Symbol with hover details - always visible */}
-          <TableCell>
-            <Tooltip
-              title={<StockDetailsTooltip row={row} />}
-              arrow
-              placement="right-start"
-              PopperProps={{
-                sx: {
-                  '& .MuiTooltip-tooltip': {
-                    backgroundColor: 'white',
-                    color: 'inherit',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                    p: 0
-                  }
-                }
-              }}
-            >
-              <Box
-                component="a"
-                href={`#/quote?symbol=${row.symbol}`}
-                sx={{
-                  color: 'var(--primary-blue)',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline'
-                  }
-                }}
-              >
-                {row.symbol}
-              </Box>
-            </Tooltip>
-          </TableCell>
+      {/* Current Price */}
+      <TableCell align="right" sx={{ fontWeight: 600 }}>
+        ${row.price != null ? row.price.toFixed(2) : '0.00'}
+      </TableCell>
 
-          {/* Alert Price - always visible */}
-          <TableCell align="right">
-            {editMode && isItemSelected ? (
-              <TextField
-                value={editingValues[row.symbol] || ''}
-                error={!!alertErrors[row.symbol]}
-                helperText={alertErrors[row.symbol]}
-                size="small"
-                type="text"
-                variant="outlined"
-                autoFocus={selected.length === 1}
-                InputProps={{
-                  sx: {
-                    height: '32px',
-                    width: '100px',
-                    fontWeight: 500,
-                    '& input': { textAlign: 'right' }
-                  }
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Always clear on first click for easier editing
-                  if (
-                    editingValues[row.symbol] === String(row.alertPrice != null ? row.alertPrice.toFixed(2) : '0.00') ||
-                    editingValues[row.symbol] === undefined
-                  ) {
-                    setEditingValues({
-                      ...editingValues,
-                      [row.symbol]: ''
-                    });
-                  }
-                }}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Allow typing decimals more freely, including multiple decimals during typing
-                  if (value === '' || /^[0-9]*\.?[0-9]*$/.test(value)) {
-                    setEditingValues({
-                      ...editingValues,
-                      [row.symbol]: value
-                    });
-                  }
-                }}
-                onBlur={(e) => {
-                  // If field is empty when clicked away, restore original value
-                  if (editingValues[row.symbol] === '') {
-                    setEditingValues({
-                      ...editingValues,
-                      [row.symbol]: String(row.alertPrice != null ? row.alertPrice.toFixed(2) : '0.00')
-                    });
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleEditStocks(); // Save all changes and exit edit mode
-                  } else if (e.key === 'Escape') {
-                    setEditMode(false);
-                    setEditingValues({});
-                  }
-                }}
-              />
-            ) : (
-              <Box
-                sx={{
-                  display: 'inline-block',
-                  minWidth: '80px',
-                  p: '4px 8px',
-                  borderRadius: '4px',
-                  color: row.alertPrice == null ? 'var(--secondary-blue)' : 'inherit',
-                  fontStyle: 'normal',
-                  cursor: row.alertPrice == null ? 'pointer' : 'default',
-                  textAlign: 'center'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!editMode && row.alertPrice == null) {
-                    setSelected([row.symbol]);
-                    handleEnterEditMode();
-                  }
-                }}
-              >
-                {row.alertPrice != null ? (
-                  `$${row.alertPrice.toFixed(2)}`
-                ) : (
-                  <>
-                    No price set
-                    <br />
-                    <span style={{ fontWeight: 500 }}>click to add</span>
-                  </>
-                )}
-              </Box>
-            )}
-          </TableCell>
+      {/* Alert Price Deviation Percentage */}
+      <TableCell
+        align="right"
+        sx={{
+          color: (getAlertPriceDeviationPercent(row) || 0) >= 0 ? 'green' : 'red',
+          fontWeight: 500,
+          borderRight: '1px solid black'
+        }}
+      >
+        {getAlertPriceDeviationPercent(row) !== null
+          ? (getAlertPriceDeviationPercent(row)! >= 0 ? '+' : '') +
+            getAlertPriceDeviationPercent(row)!.toFixed(2) +
+            '%'
+          : '0.00%'}
+      </TableCell>
 
-          {/* Current Price - always visible */}
-          <TableCell align="right" sx={{ fontWeight: 600 }}>
-            ${row.price != null ? row.price.toFixed(2) : '0.00'}
-          </TableCell>
-
-          {/* Alert Price Deviation Percentage */}
+      {/* Timeframe-specific columns */}
+      {['90d', '180d', '1y', '3y', '5y'].includes(viewMode) && (
+        <>
+          {/* High value for selected timeframe */}
           <TableCell
             align="right"
             sx={{
-              color: (getAlertPriceDeviationPercent(row) || 0) >= 0 ? 'green' : 'red',
+              backgroundColor: 'rgba(232, 244, 253, 0.6)',
+              borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+              borderLeft: '1px solid black'
+            }}
+          >
+            $
+            {getTimeframeHighValue(row, viewMode as TimeframeMode) !== null
+              ? getTimeframeHighValue(row, viewMode as TimeframeMode)!.toFixed(2)
+              : '0.00'}
+          </TableCell>
+
+          {/* High percentage for selected timeframe */}
+          <TableCell
+            align="right"
+            sx={{
+              color: (getTimeframeHighPercentage(row, viewMode as TimeframeMode) || 0) >= 0 ? 'green' : 'red',
               fontWeight: 500,
+              backgroundColor: 'rgba(232, 244, 253, 0.6)',
               borderRight: '1px solid black'
             }}
           >
-            {getAlertPriceDeviationPercent(row) !== null
-              ? (getAlertPriceDeviationPercent(row)! >= 0 ? '+' : '') +
-                getAlertPriceDeviationPercent(row)!.toFixed(2) +
-                '%'
-              : '0.00%'}
+            {renderPercentage(getTimeframeHighPercentage(row, viewMode as TimeframeMode))}
           </TableCell>
 
-          {/* Timeframe-specific columns */}
-          {['90d', '180d', '1y', '3y', '5y'].includes(viewMode) && (
-            <>
-              {/* High value for selected timeframe */}
-              <TableCell
-                align="right"
-                sx={{
-                  backgroundColor: 'rgba(232, 244, 253, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)',
-                  borderLeft: '1px solid black' // Left border of high section
-                }}
-              >
-                $
-                {getTimeframeHighValue(row, viewMode as TimeframeMode) !== null
-                  ? getTimeframeHighValue(row, viewMode as TimeframeMode)!.toFixed(2)
-                  : '0.00'}
-              </TableCell>
-
-              {/* High percentage for selected timeframe */}
-              <TableCell
-                align="right"
-                sx={{
-                  color: (getTimeframeHighPercentage(row, viewMode as TimeframeMode) || 0) >= 0 ? 'green' : 'red',
-                  fontWeight: 500,
-                  backgroundColor: 'rgba(232, 244, 253, 0.6)',
-                  borderRight: '1px solid black'
-                }}
-              >
-                {renderPercentage(getTimeframeHighPercentage(row, viewMode as TimeframeMode))}
-              </TableCell>
-
-              {/* Low value for selected timeframe */}
-              <TableCell
-                align="right"
-                sx={{
-                  backgroundColor: 'rgba(253, 237, 232, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)',
-                  borderLeft: '1px solid black' // Left border of low section
-                }}
-              >
-                $
-                {getTimeframeLowValue(row, viewMode as TimeframeMode) !== null
-                  ? getTimeframeLowValue(row, viewMode as TimeframeMode)!.toFixed(2)
-                  : '0.00'}
-              </TableCell>
-
-              {/* Low percentage for selected timeframe */}
-              <TableCell
-                align="right"
-                sx={{
-                  color: (getTimeframeLowPercentage(row, viewMode as TimeframeMode) || 0) >= 0 ? 'green' : 'red',
-                  fontWeight: 500,
-                  backgroundColor: 'rgba(253, 237, 232, 0.6)',
-                  borderRight: '1px solid black'
-                }}
-              >
-                {renderPercentage(getTimeframeLowPercentage(row, viewMode as TimeframeMode))}
-              </TableCell>
-            </>
-          )}
-          {/* View-specific columns */}
-          {viewMode === 'full' && (
-            <>
-              {/* High metrics section with background shading and borders */}
-              <TableCell
-                align="right"
-                sx={{
-                  backgroundColor: 'rgba(232, 244, 253, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)',
-                  borderLeft: '1px solid black' // Left border of high section
-                }}
-              >
-                ${row.yearHigh != null ? row.yearHigh.toFixed(2) : '0.00'}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: (row.yearHighVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
-                  fontWeight: 500,
-                  backgroundColor: 'rgba(232, 244, 253, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                {renderPercentage(row.yearHighVsCurrentPercentage)}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  backgroundColor: 'rgba(232, 244, 253, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                ${row.fiveYearHigh != null ? row.fiveYearHigh.toFixed(2) : '0.00'}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: (row.fiveYearHighVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
-                  fontWeight: 500,
-                  backgroundColor: 'rgba(232, 244, 253, 0.6)',
-                  borderRight: '1px solid black' // Right border of high section
-                }}
-              >
-                {renderPercentage(row.fiveYearHighVsCurrentPercentage)}
-              </TableCell>
-
-              {/* Low metrics section with different background shading and borders */}
-              <TableCell
-                align="right"
-                sx={{
-                  backgroundColor: 'rgba(253, 237, 232, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)',
-                  borderLeft: '1px solid black' // Left border of low section
-                }}
-              >
-                ${row.yearLow != null ? row.yearLow.toFixed(2) : '0.00'}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: (row.yearLowVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
-                  fontWeight: 500,
-                  backgroundColor: 'rgba(253, 237, 232, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                {renderPercentage(row.yearLowVsCurrentPercentage)}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  backgroundColor: 'rgba(253, 237, 232, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                ${row.fiveYearLow != null ? row.fiveYearLow.toFixed(2) : '0.00'}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: (row.fiveYearLowVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
-                  fontWeight: 500,
-                  backgroundColor: 'rgba(253, 237, 232, 0.6)',
-                  borderRight: '1px solid black' // Right border of low section
-                }}
-              >
-                {renderPercentage(row.fiveYearLowVsCurrentPercentage)}
-              </TableCell>
-            </>
-          )}
-
-          {viewMode === 'high' && (
-            <>
-              <TableCell
-                align="right"
-                sx={{
-                  backgroundColor: 'rgba(232, 244, 253, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)',
-                  borderLeft: '1px solid black' // Left border of high section
-                }}
-              >
-                ${row.yearHigh != null ? row.yearHigh.toFixed(2) : '0.00'}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: (row.yearHighVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
-                  fontWeight: 500,
-                  backgroundColor: 'rgba(232, 244, 253, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                {renderPercentage(row.yearHighVsCurrentPercentage)}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  backgroundColor: 'rgba(232, 244, 253, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                ${row.fiveYearHigh != null ? row.fiveYearHigh.toFixed(2) : '0.00'}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: (row.fiveYearHighVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
-                  fontWeight: 500,
-                  backgroundColor: 'rgba(232, 244, 253, 0.6)',
-                  borderRight: '1px solid black' // Right border of high section
-                }}
-              >
-                {renderPercentage(row.fiveYearHighVsCurrentPercentage)}
-              </TableCell>
-            </>
-          )}
-
-          {viewMode === 'low' && (
-            <>
-              <TableCell
-                align="right"
-                sx={{
-                  backgroundColor: 'rgba(253, 237, 232, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)',
-                  borderLeft: '1px solid black' // Left border of low section
-                }}
-              >
-                ${row.yearLow != null ? row.yearLow.toFixed(2) : '0.00'}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: (row.yearLowVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
-                  fontWeight: 500,
-                  backgroundColor: 'rgba(253, 237, 232, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                {renderPercentage(row.yearLowVsCurrentPercentage)}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  backgroundColor: 'rgba(253, 237, 232, 0.6)',
-                  borderRight: '1px solid rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                ${row.fiveYearLow != null ? row.fiveYearLow.toFixed(2) : '0.00'}
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: (row.fiveYearLowVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
-                  fontWeight: 500,
-                  backgroundColor: 'rgba(253, 237, 232, 0.6)',
-                  borderRight: '1px solid black' // Right border of low section
-                }}
-              >
-                {renderPercentage(row.fiveYearLowVsCurrentPercentage)}
-              </TableCell>
-            </>
-          )}
-        </TableRow>
-      );
-    });
-  };
-
-  const columns = getColumnsForView(viewMode);
-
-  return (
-    <TableContainer
-      component={Paper}
-      sx={{
-        width: '95%',
-        backgroundColor: 'white',
-        borderRadius: '10px',
-        margin: '20px',
-        boxShadow: '0 4px 12px var(--border-color)',
-        overflow: 'hidden'
-      }}
-    >
-      {/* Header Section */}
-      <Box
-        sx={{
-          backgroundColor: 'var(--background-light)',
-          padding: '16px 20px',
-          borderBottom: '1px solid var(--border-color)'
-        }}
-      >
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography
-            variant="h5"
+          {/* Low value for selected timeframe */}
+          <TableCell
+            align="right"
             sx={{
-              fontWeight: 600,
-              color: 'var(--primary-blue)',
-              fontFamily: 'var(--font-family)'
+              backgroundColor: 'rgba(253, 237, 232, 0.6)',
+              borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+              borderLeft: '1px solid black'
             }}
           >
-            My Watchlists
-          </Typography>
+            $
+            {getTimeframeLowValue(row, viewMode as TimeframeMode) !== null
+              ? getTimeframeLowValue(row, viewMode as TimeframeMode)!.toFixed(2)
+              : '0.00'}
+          </TableCell>
 
-          <Box display="flex" alignItems="center" gap={1}>
-            {/* Expanded view mode toggle with timeframe options */}
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={handleViewModeChange}
-              size="small"
-              aria-label="view mode"
-              sx={{
-                '& .MuiToggleButton-root': {
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--primary-blue)',
-                  padding: '5px 10px',
-                  '&.Mui-selected': {
-                    backgroundColor: 'var(--primary-blue)',
-                    color: 'white',
-                    '&:hover': {
-                      backgroundColor: 'var(--secondary-blue)'
-                    }
-                  }
-                }
-              }}
-            >
-              <ToggleButton value="full" aria-label="full view">
-                <Tooltip title="Full View">
-                  <ViewListIcon />
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="high" aria-label="high view">
-                <Tooltip title="High Focus View">
-                  <TrendingUpIcon />
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="low" aria-label="low view">
-                <Tooltip title="Low Focus View">
-                  <TrendingDownIcon />
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="90d" aria-label="90 day view">
-                <Tooltip title="90 Day View">
-                  <Box sx={{ fontSize: '0.75rem', fontWeight: 600 }}>90d</Box>
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="180d" aria-label="180 day view">
-                <Tooltip title="180 Day View">
-                  <Box sx={{ fontSize: '0.75rem', fontWeight: 600 }}>180d</Box>
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="1y" aria-label="1 year view">
-                <Tooltip title="1 Year View">
-                  <Box sx={{ fontSize: '0.75rem', fontWeight: 600 }}>1y</Box>
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="3y" aria-label="3 year view">
-                <Tooltip title="3 Year View">
-                  <Box sx={{ fontSize: '0.75rem', fontWeight: 600 }}>3y</Box>
-                </Tooltip>
-              </ToggleButton>
-              <ToggleButton value="5y" aria-label="5 year view">
-                <Tooltip title="5 Year View">
-                  <Box sx={{ fontSize: '0.75rem', fontWeight: 600 }}>5y</Box>
-                </Tooltip>
-              </ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
-        </Box>
-
-        {/* Performers Summary */}
-        {wlKey && <WatchlistPerformersSummary topPerformer={topPerformer} worstPerformer={worstPerformer} />}
-
-        {/* Watchlist tabs */}
-        <Box sx={{ mt: 2 }}>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center' }}>
-            <Tabs
-              value={wlKey}
-              onChange={handleWatchlistChange}
-              variant="scrollable"
-              scrollButtons="auto"
-              sx={{
-                '& .MuiTab-root': {
-                  fontFamily: 'var(--font-family)',
-                  color: 'var(--secondary-blue)',
-                  '&.Mui-selected': {
-                    color: 'var(--primary-blue)',
-                    fontWeight: 600
-                  }
-                },
-                '& .MuiTabs-indicator': {
-                  backgroundColor: 'var(--primary-blue)'
-                }
-              }}
-            >
-              {wlKeys.map((key) => (
-                <Tab
-                  key={key}
-                  label={key}
-                  value={key}
-                  ref={(el) => {
-                    tabRefs.current[key] = el;
-                  }}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: wlKey === key ? 600 : 400
-                  }}
-                />
-              ))}
-            </Tabs>
-
-            <Button
-              startIcon={<AddIcon />}
-              onClick={() => {
-                setWatchlistNameError('');
-                setCreateWatchlistOpen(true);
-              }}
-              sx={{
-                ml: 1,
-                color: 'var(--primary-blue)',
-                borderRadius: '12px',
-                textTransform: 'none',
-                fontFamily: 'var(--font-family)',
-                fontWeight: 600,
-                '&:hover': {
-                  backgroundColor: 'var(--background-light)'
-                }
-              }}
-            >
-              Create
-            </Button>
-
-            {wlKey && (
-              <IconButton
-                size="small"
-                onClick={() => setDeleteWatchlistDialog(true)}
-                sx={{ ml: 1, color: 'var(--primary-blue)' }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            )}
-          </Box>
-        </Box>
-
-        {/* Search and add stock section */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            mt: 3,
-            mb: 1,
-            width: 'fit-content', // Only take as much width as needed
-            position: 'relative',
-            left: 0
-          }}
-        >
-          <Typography
-            variant="body1"
-            component="span" // Use span to make it inline with search bar
+          {/* Low percentage for selected timeframe */}
+          <TableCell
+            align="right"
             sx={{
-              mr: 2,
-              whiteSpace: 'nowrap', // Prevent text wrapping
-              color: 'var(--secondary-blue)',
-              fontFamily: 'var(--font-family)'
+              color: (getTimeframeLowPercentage(row, viewMode as TimeframeMode) || 0) >= 0 ? 'green' : 'red',
+              fontWeight: 500,
+              backgroundColor: 'rgba(253, 237, 232, 0.6)',
+              borderRight: '1px solid black'
             }}
           >
-            Add to watchlist:
-          </Typography>
-
-          <Box display="inline-block">
-            <WatchlistTickersSearchBar
-              setAddStockSymbol={(symbol) => {
-                setSearchReady(true); // Mark search as ready when symbol is set
-                setAddStockSymbol(symbol);
-              }}
-              onSelectStock={() => {
-                if (addStockSymbol && wlKey && searchReady) {
-                  setAddStockDialog(true);
-                }
-              }}
-              isDisabled={!wlKey}
-            />
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Table Section */}
-      {wlKey && (
-        <>
-          <EnhancedTableToolbar
-            numSelected={selected.length}
-            handleDeleteStocks={handleDeleteStocks}
-            handleEditStocks={handleEditStocks}
-            editMode={editMode}
-            filterMode={filterMode}
-            handleFilterChange={handleFilterChange}
-          />
-
-          <Box sx={{ overflowX: 'auto' }}>
-            <Table sx={{ minWidth: 650 }} aria-label="watchlist table">
-              <TableHead>
-                <TableRow>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      color="primary"
-                      indeterminate={selected.length > 0 && selected.length < visibleTickers.length}
-                      checked={visibleTickers.length > 0 && selected.length === visibleTickers.length}
-                      onChange={handleSelectAllClick}
-                      inputProps={{ 'aria-label': 'select all stocks' }}
-                    />
-                  </TableCell>
-
-                  <TableCell sx={{ width: 40 }}></TableCell>
-
-                  {columns.map((column) => (
-                    <TableCell
-                      key={column.id}
-                      align={column.align === 'right' ? 'right' : 'left'}
-                      sx={{
-                        fontWeight: 600,
-                        color: 'var(--primary-blue)',
-                        fontFamily: 'var(--font-family)',
-                        backgroundColor: column.id.includes('High')
-                          ? 'rgba(232, 244, 253, 0.3)'
-                          : column.id.includes('Low')
-                          ? 'rgba(253, 237, 232, 0.3)'
-                          : 'inherit',
-                        borderLeft:
-                          column.id === 'yearHigh' ||
-                          column.id === 'yearLow' ||
-                          column.id === '90dHigh' ||
-                          column.id === '90dLow' ||
-                          column.id === '180dHigh' ||
-                          column.id === '180dLow' ||
-                          column.id === '1yHigh' ||
-                          column.id === '1yLow' ||
-                          column.id === '3yHigh' ||
-                          column.id === '3yLow' ||
-                          column.id === '5yHigh' ||
-                          column.id === '5yLow'
-                            ? '1px solid black'
-                            : 'inherit',
-                        borderRight:
-                          column.id === 'fiveYearHighVsCurrentPercentage' ||
-                          column.id === 'fiveYearLowVsCurrentPercentage' ||
-                          column.id === 'alertPriceDeviationPercent' ||
-                          column.id === '90dHighVsCurrentPercentage' ||
-                          column.id === '180dHighVsCurrentPercentage' ||
-                          column.id === '1yHighVsCurrentPercentage' ||
-                          column.id === '3yHighVsCurrentPercentage' ||
-                          column.id === '5yHighVsCurrentPercentage' ||
-                          column.id === '90dLowVsCurrentPercentage' ||
-                          column.id === '180dLowVsCurrentPercentage' ||
-                          column.id === '1yLowVsCurrentPercentage' ||
-                          column.id === '3yLowVsCurrentPercentage' ||
-                          column.id === '5yLowVsCurrentPercentage'
-                            ? '1px solid black'
-                            : column.id.includes('High') || column.id.includes('Low')
-                            ? '1px solid rgba(0, 0, 0, 0.1)'
-                            : 'inherit'
-                      }}
-                    >
-                      <Box
-                        component="div"
-                        onClick={(e) => handleRequestSort(e, column.id as keyof WatchlistTicker)}
-                        sx={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          cursor: 'pointer',
-                          '&:hover': {
-                            color: 'var(--secondary-blue)'
-                          }
-                        }}
-                      >
-                        {column.label}
-                        {column.tooltip && (
-                          <Tooltip title={column.tooltip} arrow placement="top">
-                            <Box component="span" sx={{ ml: 0.5, cursor: 'help' }}>
-                              <InfoIcon fontSize="small" sx={{ fontSize: '16px', opacity: 0.7 }} />
-                            </Box>
-                          </Tooltip>
-                        )}
-                        <Box component="span" sx={{ ml: 0.5 }}>
-                          {orderBy === column.id ? (
-                            order === 'asc' ? (
-                              '↑'
-                            ) : (
-                              '↓'
-                            )
-                          ) : (
-                            <Box component="span" sx={{ opacity: 0.2 }}>
-                              ↕
-                            </Box>
-                          )}
-                        </Box>
-                      </Box>
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>{renderTable()}</TableBody>
-            </Table>
-          </Box>
+            {renderPercentage(getTimeframeLowPercentage(row, viewMode as TimeframeMode))}
+          </TableCell>
         </>
       )}
-
-      {/* Create Watchlist Dialog */}
-      <Dialog
-        open={createWatchlistOpen}
-        onClose={() => setCreateWatchlistOpen(false)}
-        sx={{ '& .MuiPaper-root': { borderRadius: '12px' } }}
-      >
-        <DialogTitle
-          sx={{
-            color: 'var(--primary-blue)',
-            fontFamily: 'var(--font-family)',
-            fontWeight: 600
-          }}
-        >
-          Create New Watchlist
-        </DialogTitle>
-
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2, color: 'var(--secondary-blue)' }}>
-            Enter a name for your new watchlist:
-          </DialogContentText>
-
-          {watchlistNameError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {watchlistNameError}
-            </Alert>
-          )}
-
-          <TextField
-            autoFocus
-            fullWidth
-            label="Watchlist Name"
-            value={newWatchlistName}
-            onChange={(e) => setNewWatchlistName(e.target.value)}
+      
+      {/* View-specific columns */}
+      {viewMode === 'full' && (
+        <>
+          {/* High metrics section */}
+          <TableCell
+            align="right"
             sx={{
-              '& .MuiOutlinedInput-root': {
-                '&.Mui-focused fieldset': {
-                  borderColor: 'var(--primary-blue)'
-                }
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: 'var(--primary-blue)'
-              }
-            }}
-          />
-        </DialogContent>
-
-        <DialogActions sx={{ p: 2 }}>
-          <Button
-            onClick={() => setCreateWatchlistOpen(false)}
-            sx={{
-              color: 'var(--secondary-blue)',
-              textTransform: 'none',
-              fontFamily: 'var(--font-family)',
-              fontWeight: 500
+              backgroundColor: 'rgba(232, 244, 253, 0.6)',
+              borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+              borderLeft: '1px solid black'
             }}
           >
-            Cancel
-          </Button>
+            ${row.yearHigh != null ? row.yearHigh.toFixed(2) : '0.00'}
+          </TableCell>
+          <TableCell
+               align="right"
+               sx={{
+                 color: (row.yearHighVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
+                 fontWeight: 500,
+                 backgroundColor: 'rgba(232, 244, 253, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+               }}
+             >
+               {renderPercentage(row.yearHighVsCurrentPercentage)}
+             </TableCell>
+             <TableCell
+               align="right"
+               sx={{
+                 backgroundColor: 'rgba(232, 244, 253, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+               }}
+             >
+               ${row.fiveYearHigh != null ? row.fiveYearHigh.toFixed(2) : '0.00'}
+             </TableCell>
+             <TableCell
+               align="right"
+               sx={{
+                 color: (row.fiveYearHighVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
+                 fontWeight: 500,
+                 backgroundColor: 'rgba(232, 244, 253, 0.6)',
+                 borderRight: '1px solid black' // Right border of high section
+               }}
+             >
+               {renderPercentage(row.fiveYearHighVsCurrentPercentage)}
+             </TableCell>
 
-          <Button
-            onClick={handleCreateNewWatchlist}
-            disabled={!newWatchlistName.trim()}
-            variant="contained"
-            sx={{
-              bgcolor: 'var(--primary-blue)',
-              textTransform: 'none',
-              fontFamily: 'var(--font-family)',
-              fontWeight: 500,
-              '&:hover': {
-                bgcolor: 'var(--secondary-blue)'
-              }
-            }}
-          >
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
+             {/* Low metrics section */}
+             <TableCell
+               align="right"
+               sx={{
+                 backgroundColor: 'rgba(253, 237, 232, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+                 borderLeft: '1px solid black' // Left border of low section
+               }}
+             >
+               ${row.yearLow != null ? row.yearLow.toFixed(2) : '0.00'}
+             </TableCell>
+             <TableCell
+               align="right"
+               sx={{
+                 color: (row.yearLowVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
+                 fontWeight: 500,
+                 backgroundColor: 'rgba(253, 237, 232, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+               }}
+             >
+               {renderPercentage(row.yearLowVsCurrentPercentage)}
+             </TableCell>
+             <TableCell
+               align="right"
+               sx={{
+                 backgroundColor: 'rgba(253, 237, 232, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+               }}
+             >
+               ${row.fiveYearLow != null ? row.fiveYearLow.toFixed(2) : '0.00'}
+             </TableCell>
+             <TableCell
+               align="right"
+               sx={{
+                 color: (row.fiveYearLowVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
+                 fontWeight: 500,
+                 backgroundColor: 'rgba(253, 237, 232, 0.6)',
+                 borderRight: '1px solid black' // Right border of low section
+               }}
+             >
+               {renderPercentage(row.fiveYearLowVsCurrentPercentage)}
+             </TableCell>
+           </>
+         )}
 
-      {/* Other dialogs */}
-      <AddStockDialog
-        addStockSymbol={addStockSymbol}
-        watchlistName={wlKey}
-        watchlists={watchLists}
-        setWatchlists={setWatchLists}
-        isAddStockDialog={isAddStockDialog}
-        setAddStockDialog={setAddStockDialog}
-        // IMPORTANT: Use our custom close handler
-        onClose={handleCloseAddStockDialog}
-      />
+         {viewMode === 'high' && (
+           <>
+             <TableCell
+               align="right"
+               sx={{
+                 backgroundColor: 'rgba(232, 244, 253, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+                 borderLeft: '1px solid black' // Left border of high section
+               }}
+             >
+               ${row.yearHigh != null ? row.yearHigh.toFixed(2) : '0.00'}
+             </TableCell>
+             <TableCell
+               align="right"
+               sx={{
+                 color: (row.yearHighVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
+                 fontWeight: 500,
+                 backgroundColor: 'rgba(232, 244, 253, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+               }}
+             >
+               {renderPercentage(row.yearHighVsCurrentPercentage)}
+             </TableCell>
+             <TableCell
+               align="right"
+               sx={{
+                 backgroundColor: 'rgba(232, 244, 253, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+               }}
+             >
+               ${row.fiveYearHigh != null ? row.fiveYearHigh.toFixed(2) : '0.00'}
+             </TableCell>
+             <TableCell
+               align="right"
+               sx={{
+                 color: (row.fiveYearHighVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
+                 fontWeight: 500,
+                 backgroundColor: 'rgba(232, 244, 253, 0.6)',
+                 borderRight: '1px solid black' // Right border of high section
+               }}
+             >
+               {renderPercentage(row.fiveYearHighVsCurrentPercentage)}
+             </TableCell>
+           </>
+         )}
 
-      <DeleteWatchListDialog
-        watchListName={wlKey}
-        isDeleteWatchListDialog={isDeleteWatchlistDialog}
-        handleCloseDeleteWatchListDialog={handleCloseDeleteWatchlistDialog}
-      />
+         {viewMode === 'low' && (
+           <>
+             <TableCell
+               align="right"
+               sx={{
+                 backgroundColor: 'rgba(253, 237, 232, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+                 borderLeft: '1px solid black' // Left border of low section
+               }}
+             >
+               ${row.yearLow != null ? row.yearLow.toFixed(2) : '0.00'}
+             </TableCell>
+             <TableCell
+               align="right"
+               sx={{
+                 color: (row.yearLowVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
+                 fontWeight: 500,
+                 backgroundColor: 'rgba(253, 237, 232, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+               }}
+             >
+               {renderPercentage(row.yearLowVsCurrentPercentage)}
+             </TableCell>
+             <TableCell
+               align="right"
+               sx={{
+                 backgroundColor: 'rgba(253, 237, 232, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+               }}
+             >
+               ${row.fiveYearLow != null ? row.fiveYearLow.toFixed(2) : '0.00'}
+             </TableCell>
+             <TableCell
+               align="right"
+               sx={{
+                 color: (row.fiveYearLowVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
+                 fontWeight: 500,
+                 backgroundColor: 'rgba(253, 237, 232, 0.6)',
+                 borderRight: '1px solid black' // Right border of low section
+               }}
+             >
+               {renderPercentage(row.fiveYearLowVsCurrentPercentage)}
+             </TableCell>
+           </>
+         )}
+       </TableRow>
+     );
+   });
+ };
 
-      {/* Reorder Watchlists Dialog */}
-      <ReorderWatchlistsDialog
-        open={reorderWatchlistsOpen}
-        onClose={() => setReorderWatchlistsOpen(false)}
-        watchlistKeys={wlKeys}
-        onSaveOrder={handleSaveWatchlistOrder}
-      />
-    </TableContainer>
-  );
+ const columns = getColumnsForView(viewMode);
+
+ return (
+   <TableContainer
+     component={Paper}
+     sx={{
+       width: '95%',
+       backgroundColor: 'white',
+       borderRadius: '10px',
+       margin: '20px',
+       boxShadow: '0 4px 12px var(--border-color)',
+       overflow: 'hidden'
+     }}
+   >
+     {/* Header Section */}
+     <Box
+       sx={{
+         backgroundColor: 'var(--background-light)',
+         padding: '16px 20px',
+         borderBottom: '1px solid var(--border-color)'
+       }}
+     >
+       <Box display="flex" justifyContent="space-between" alignItems="center">
+         <Typography
+           variant="h5"
+           sx={{
+             fontWeight: 600,
+             color: 'var(--primary-blue)',
+             fontFamily: 'var(--font-family)'
+           }}
+         >
+           My Watchlists
+         </Typography>
+
+         <Box display="flex" alignItems="center" gap={1}>
+           {/* Expanded view mode toggle with timeframe options */}
+           <ToggleButtonGroup
+             value={viewMode}
+             exclusive
+             onChange={handleViewModeChange}
+             size="small"
+             aria-label="view mode"
+             sx={{
+               '& .MuiToggleButton-root': {
+                 border: '1px solid var(--border-color)',
+                 color: 'var(--primary-blue)',
+                 padding: '5px 10px',
+                 '&.Mui-selected': {
+                   backgroundColor: 'var(--primary-blue)',
+                   color: 'white',
+                   '&:hover': {
+                     backgroundColor: 'var(--secondary-blue)'
+                   }
+                 }
+               }
+             }}
+           >
+             <ToggleButton value="full" aria-label="full view">
+               <Tooltip title="Full View">
+                 <ViewListIcon />
+               </Tooltip>
+             </ToggleButton>
+             <ToggleButton value="high" aria-label="high view">
+               <Tooltip title="High Focus View">
+                 <TrendingUpIcon />
+               </Tooltip>
+             </ToggleButton>
+             <ToggleButton value="low" aria-label="low view">
+               <Tooltip title="Low Focus View">
+                 <TrendingDownIcon />
+               </Tooltip>
+             </ToggleButton>
+             <ToggleButton value="90d" aria-label="90 day view">
+               <Tooltip title="90 Day View">
+                 <Box sx={{ fontSize: '0.75rem', fontWeight: 600 }}>90d</Box>
+               </Tooltip>
+             </ToggleButton>
+             <ToggleButton value="180d" aria-label="180 day view">
+               <Tooltip title="180 Day View">
+                 <Box sx={{ fontSize: '0.75rem', fontWeight: 600 }}>180d</Box>
+               </Tooltip>
+             </ToggleButton>
+             <ToggleButton value="1y" aria-label="1 year view">
+               <Tooltip title="1 Year View">
+                 <Box sx={{ fontSize: '0.75rem', fontWeight: 600 }}>1y</Box>
+               </Tooltip>
+             </ToggleButton>
+             <ToggleButton value="3y" aria-label="3 year view">
+               <Tooltip title="3 Year View">
+                 <Box sx={{ fontSize: '0.75rem', fontWeight: 600 }}>3y</Box>
+               </Tooltip>
+             </ToggleButton>
+             <ToggleButton value="5y" aria-label="5 year view">
+               <Tooltip title="5 Year View">
+                 <Box sx={{ fontSize: '0.75rem', fontWeight: 600 }}>5y</Box>
+               </Tooltip>
+             </ToggleButton>
+           </ToggleButtonGroup>
+         </Box>
+       </Box>
+
+       {/* Performers Summary */}
+       {wlKey && <WatchlistPerformersSummary topPerformer={topPerformer} worstPerformer={worstPerformer} />}
+
+       {/* Watchlist tabs with reordering UI */}
+       <Box sx={{ mt: 2 }}>
+         <Box sx={{ 
+           borderBottom: 1, 
+           borderColor: 'divider', 
+           display: 'flex', 
+           alignItems: 'center',
+           position: 'relative'
+         }}>
+           {/* Custom tabs component that supports drag and drop */}
+           <Box 
+             sx={{
+               display: 'flex',
+               alignItems: 'center',
+               flexGrow: 1,
+               overflow: 'auto',
+               '&::-webkit-scrollbar': {
+                 height: '4px',
+               },
+               '&::-webkit-scrollbar-track': {
+                 background: 'transparent'
+               },
+               '&::-webkit-scrollbar-thumb': {
+                 backgroundColor: 'var(--border-color)',
+                 borderRadius: '4px',
+               }
+             }}
+           >
+             {isReorderMode ? (
+               /* Reorder mode - draggable tabs */
+               <Box 
+                 component="div" 
+                 sx={{ 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   backgroundColor: 'var(--background-light)',
+                   borderRadius: '8px',
+                   padding: '4px',
+                   border: '1px solid var(--border-color)',
+                   width: '100%',
+                   overflow: 'auto'
+                 }}
+               >
+                 {wlKeys.map((key, index) => (
+                   <DraggableTab
+                     key={key}
+                     label={key}
+                     value={key}
+                     index={index}
+                     isSelected={wlKey === key}
+                     isReorderMode={true}
+                     onDragStart={handleWatchlistDragStart}
+                     onDragOver={handleWatchlistDragOver}
+                     onDragEnd={handleWatchlistDragEnd}
+                   />
+                 ))}
+               </Box>
+             ) : (
+               /* Normal mode - regular tabs */
+               <Tabs
+                 value={wlKey}
+                 onChange={handleWatchlistChange}
+                 variant="scrollable"
+                 scrollButtons="auto"
+                 sx={{
+                   flexGrow: 1,
+                   '& .MuiTab-root': {
+                     fontFamily: 'var(--font-family)',
+                     color: 'var(--secondary-blue)',
+                     '&.Mui-selected': {
+                       color: 'var(--primary-blue)',
+                       fontWeight: 600
+                     }
+                   },
+                   '& .MuiTabs-indicator': {
+                     backgroundColor: 'var(--primary-blue)'
+                   }
+                 }}
+               >
+                 {wlKeys.map((key) => (
+                   <Tab
+                     key={key}
+                     label={key}
+                     value={key}
+                     ref={(el: HTMLDivElement | null) => {
+                       tabRefs.current[key] = el;
+                     }}
+                     sx={{
+                       textTransform: 'none',
+                       fontWeight: wlKey === key ? 600 : 400
+                     }}
+                   />
+                 ))}
+               </Tabs>
+             )}
+           </Box>
+
+           {/* Toggle reorder mode button */}
+           {wlKeys.length > 1 && (
+             <Button
+               startIcon={isReorderMode ? <CheckIcon /> : <DragIndicatorIcon />}
+               color={isReorderMode ? "success" : "primary"}
+               variant={isReorderMode ? "contained" : "outlined"}
+               onClick={toggleReorderMode}
+               sx={{
+                 ml: 1,
+                 borderRadius: '8px',
+                 textTransform: 'none',
+                 fontFamily: 'var(--font-family)',
+                 fontWeight: 600,
+                 minWidth: '100px'
+               }}
+             >
+               {isReorderMode ? 'Done' : 'Reorder'}
+             </Button>
+           )}
+
+           {/* Only show these buttons when not in reorder mode */}
+           {!isReorderMode && (
+             <>
+               <Button
+                 startIcon={<AddIcon />}
+                 onClick={() => {
+                   setWatchlistNameError('');
+                   setCreateWatchlistOpen(true);
+                 }}
+                 sx={{
+                   ml: 1,
+                   color: 'var(--primary-blue)',
+                   borderRadius: '12px',
+                   textTransform: 'none',
+                   fontFamily: 'var(--font-family)',
+                   fontWeight: 600,
+                   '&:hover': {
+                     backgroundColor: 'var(--background-light)'
+                   }
+                 }}
+               >
+                 Create
+               </Button>
+
+               {wlKey && (
+                 <IconButton
+                   size="small"
+                   onClick={() => setDeleteWatchlistDialog(true)}
+                   sx={{ ml: 1, color: 'var(--primary-blue)' }}
+                 >
+                   <DeleteIcon fontSize="small" />
+                 </IconButton>
+               )}
+             </>
+           )}
+         </Box>
+       </Box>
+
+       {/* Search and add stock section - show only when not in reorder mode */}
+       {!isReorderMode && (
+         <Box
+           sx={{
+             display: 'flex',
+             alignItems: 'center',
+             mt: 3,
+             mb: 1,
+             width: 'fit-content',
+             position: 'relative',
+             left: 0
+           }}
+         >
+           <Typography
+             variant="body1"
+             component="span"
+             sx={{
+               mr: 2,
+               whiteSpace: 'nowrap',
+               color: 'var(--secondary-blue)',
+               fontFamily: 'var(--font-family)'
+             }}
+           >
+             Add to watchlist:
+           </Typography>
+
+           <Box display="inline-block">
+             <WatchlistTickersSearchBar
+               setAddStockSymbol={(symbol) => {
+                 setSearchReady(true);
+                 setAddStockSymbol(symbol);
+               }}
+               onSelectStock={() => {
+                 if (addStockSymbol && wlKey && searchReady) {
+                   setAddStockDialog(true);
+                 }
+               }}
+               isDisabled={!wlKey}
+             />
+           </Box>
+         </Box>
+       )}
+     </Box>
+
+     {/* Table Section - show only when not in reorder mode */}
+     {wlKey && !isReorderMode && (
+       <>
+         <EnhancedTableToolbar
+           numSelected={selected.length}
+           handleDeleteStocks={handleDeleteStocks}
+           handleEditStocks={handleEditStocks}
+           editMode={editMode}
+           filterMode={filterMode}
+           handleFilterChange={handleFilterChange}
+         />
+
+         <Box sx={{ overflowX: 'auto' }}>
+           <Table sx={{ minWidth: 650 }} aria-label="watchlist table">
+             <TableHead>
+               <TableRow>
+                 <TableCell padding="checkbox">
+                   <Checkbox
+                     color="primary"
+                     indeterminate={selected.length > 0 && selected.length < visibleTickers.length}
+                     checked={visibleTickers.length > 0 && selected.length === visibleTickers.length}
+                     onChange={handleSelectAllClick}
+                     inputProps={{ 'aria-label': 'select all stocks' }}
+                   />
+                 </TableCell>
+
+                 <TableCell sx={{ width: 40 }}></TableCell>
+
+                 {columns.map((column) => (
+                   <TableCell
+                     key={column.id}
+                     align={column.align === 'right' ? 'right' : 'left'}
+                     sx={{
+                       fontWeight: 600,
+                       color: 'var(--primary-blue)',
+                       fontFamily: 'var(--font-family)',
+                       backgroundColor: column.id.includes('High')
+                         ? 'rgba(232, 244, 253, 0.3)'
+                         : column.id.includes('Low')
+                         ? 'rgba(253, 237, 232, 0.3)'
+                         : 'inherit',
+                       borderLeft:
+                         column.id === 'yearHigh' ||
+                         column.id === 'yearLow' ||
+                         column.id === '90dHigh' ||
+                         column.id === '90dLow' ||
+                         column.id === '180dHigh' ||
+                         column.id === '180dLow' ||
+                         column.id === '1yHigh' ||
+                         column.id === '1yLow' ||
+                         column.id === '3yHigh' ||
+                         column.id === '3yLow' ||
+                         column.id === '5yHigh' ||
+                         column.id === '5yLow'
+                           ? '1px solid black'
+                           : 'inherit',
+                       borderRight:
+                         column.id === 'fiveYearHighVsCurrentPercentage' ||
+                         column.id === 'fiveYearLowVsCurrentPercentage' ||
+                         column.id === 'alertPriceDeviationPercent' ||
+                         column.id === '90dHighVsCurrentPercentage' ||
+                         column.id === '180dHighVsCurrentPercentage' ||
+                         column.id === '1yHighVsCurrentPercentage' ||
+                         column.id === '3yHighVsCurrentPercentage' ||
+                         column.id === '5yHighVsCurrentPercentage' ||
+                         column.id === '90dLowVsCurrentPercentage' ||
+                         column.id === '180dLowVsCurrentPercentage' ||
+                         column.id === '1yLowVsCurrentPercentage' ||
+                         column.id === '3yLowVsCurrentPercentage' ||
+                         column.id === '5yLowVsCurrentPercentage'
+                           ? '1px solid black'
+                           : column.id.includes('High') || column.id.includes('Low')
+                           ? '1px solid rgba(0, 0, 0, 0.1)'
+                           : 'inherit'
+                     }}
+                   >
+                     <Box
+                       component="div"
+                       onClick={(e) => handleRequestSort(e, column.id as keyof WatchlistTicker)}
+                       sx={{
+                         display: 'inline-flex',
+                         alignItems: 'center',
+                         cursor: 'pointer',
+                         '&:hover': {
+                           color: 'var(--secondary-blue)'
+                         }
+                       }}
+                     >
+                       {column.label}
+                       {column.tooltip && (
+                         <Tooltip title={column.tooltip} arrow placement="top">
+                           <Box component="span" sx={{ ml: 0.5, cursor: 'help' }}>
+                             <InfoIcon fontSize="small" sx={{ fontSize: '16px', opacity: 0.7 }} />
+                           </Box>
+                         </Tooltip>
+                       )}
+                       <Box component="span" sx={{ ml: 0.5 }}>
+                         {orderBy === column.id ? (
+                           order === 'asc' ? (
+                             '↑'
+                           ) : (
+                             '↓'
+                           )
+                         ) : (
+                           <Box component="span" sx={{ opacity: 0.2 }}>
+                             ↕
+                           </Box>
+                         )}
+                       </Box>
+                     </Box>
+                   </TableCell>
+                 ))}
+               </TableRow>
+             </TableHead>
+             <TableBody>{renderTable()}</TableBody>
+           </Table>
+         </Box>
+       </>
+     )}
+
+     {/* When in reorder mode and no watchlists, show a message */}
+     {isReorderMode && wlKeys.length === 0 && (
+       <Box sx={{ p: 4, textAlign: 'center' }}>
+         <Typography color="text.secondary">
+           No watchlists to reorder. Create a watchlist first.
+         </Typography>
+       </Box>
+     )}
+
+     {/* Create Watchlist Dialog */}
+     <Dialog
+       open={createWatchlistOpen}
+       onClose={() => setCreateWatchlistOpen(false)}
+       sx={{ '& .MuiPaper-root': { borderRadius: '12px' } }}
+     >
+       <DialogTitle
+         sx={{
+           color: 'var(--primary-blue)',
+           fontFamily: 'var(--font-family)',
+           fontWeight: 600
+         }}
+       >
+         Create New Watchlist
+       </DialogTitle>
+
+       <DialogContent>
+         <DialogContentText sx={{ mb: 2, color: 'var(--secondary-blue)' }}>
+           Enter a name for your new watchlist:
+         </DialogContentText>
+
+         {watchlistNameError && (
+           <Alert severity="error" sx={{ mb: 2 }}>
+             {watchlistNameError}
+           </Alert>
+         )}
+
+         <TextField
+           autoFocus
+           fullWidth
+           label="Watchlist Name"
+           value={newWatchlistName}
+           onChange={(e) => setNewWatchlistName(e.target.value)}
+           sx={{
+             '& .MuiOutlinedInput-root': {
+               '&.Mui-focused fieldset': {
+                 borderColor: 'var(--primary-blue)'
+               }
+             },
+             '& .MuiInputLabel-root.Mui-focused': {
+               color: 'var(--primary-blue)'
+             }
+           }}
+         />
+       </DialogContent>
+
+       <DialogActions sx={{ p: 2 }}>
+         <Button
+           onClick={() => setCreateWatchlistOpen(false)}
+           sx={{
+             color: 'var(--secondary-blue)',
+             textTransform: 'none',
+             fontFamily: 'var(--font-family)',
+             fontWeight: 500
+           }}
+         >
+           Cancel
+         </Button>
+
+         <Button
+           onClick={handleCreateNewWatchlist}
+           disabled={!newWatchlistName.trim()}
+           variant="contained"
+           sx={{
+             bgcolor: 'var(--primary-blue)',
+             textTransform: 'none',
+             fontFamily: 'var(--font-family)',
+             fontWeight: 500,
+             '&:hover': {
+               bgcolor: 'var(--secondary-blue)'
+             }
+           }}
+         >
+           Create
+         </Button>
+       </DialogActions>
+     </Dialog>
+
+     {/* Other dialogs */}
+     <AddStockDialog
+       addStockSymbol={addStockSymbol}
+       watchlistName={wlKey}
+       watchlists={watchLists}
+       setWatchlists={setWatchLists}
+       isAddStockDialog={isAddStockDialog}
+       setAddStockDialog={setAddStockDialog}
+       onClose={handleCloseAddStockDialog}
+     />
+
+     <DeleteWatchListDialog
+       watchListName={wlKey}
+       isDeleteWatchListDialog={isDeleteWatchlistDialog}
+       handleCloseDeleteWatchListDialog={handleCloseDeleteWatchlistDialog}
+     />
+   </TableContainer>
+ );
 }
