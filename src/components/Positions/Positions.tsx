@@ -1,5 +1,5 @@
 export const validatePositionName = (name: string): { valid: boolean; message: string } => {
-  const validPattern = /^[a-zA-Z0-9\-_\s]+$/;
+  const validPattern = /^[a-zA-Z0-9\-_'\s]+$/;
 
   if (!validPattern.test(name)) {
     const invalidChars = name.split('').filter((char) => !validPattern.test(char));
@@ -7,11 +7,14 @@ export const validatePositionName = (name: string): { valid: boolean; message: s
 
     return {
       valid: false,
-      message: `Position name can only contain letters, numbers, hyphens, underscores, and spaces. Invalid characters: ${uniqueInvalidChars.join(' ')}`
+      message: `Position name can only contain letters, numbers, hyphens (-), underscores (_), apostrophes ('), and spaces. Invalid characters: ${uniqueInvalidChars.join(' ')}`
     };
   }
 
-  return { valid: true, message: '' };
+  return {
+    valid: true,
+    message: ''
+  };
 };
 import AddIcon from '@mui/icons-material/Add';
 
