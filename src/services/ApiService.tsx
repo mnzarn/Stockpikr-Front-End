@@ -13,7 +13,7 @@ export class BaseApiService {
   public static get apiService(): AxiosInstance {
     if (BaseApiService._apiService == null) {
       BaseApiService._apiService = axios.create({
-        baseURL: 'http://localhost',
+        baseURL: 'https://13.91.83.33/',
         // baseURL: process.env.REACT_APP_BACKEND_URL || '',
         headers: {
           'Content-Type': 'application/json',
