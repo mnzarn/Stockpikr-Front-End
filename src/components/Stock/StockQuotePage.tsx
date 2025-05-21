@@ -1,6 +1,6 @@
 import { CheckCircle } from '@mui/icons-material';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
-import { Button, ToggleButton, Typography } from '@mui/material';
+import { Button, Container, ToggleButton, Typography } from '@mui/material';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Unstable_Grid2';
@@ -55,32 +55,8 @@ export const StockQuotePage: React.FC = () => {
       return;
     }
     //might need later
-
-    // const fetchQuoteData = async () => {
-    //   await StockApiService.fetchLatestStockQuote([symbolParam]).then((response): void => {
-    //     if (!response) {
-    //       return;
-    //     }
-    //     const stock = response[0] || response || null;
-    //     setQuote(stock);
-    //   });
-    // };
-
-    // const fetchCompanyProfile = async () => {
-    //   StockApiService.fetchCompanyProfile(symbolParam).then((response): void => {
-    //     if (!response) {
-    //       return;
-    //     }
-    //     const company = response[0] || null;
-    //     setCompanyProfile(company);
-    //   });
-    // };
-    // fetchQuoteData().catch((error) => {
-    //   throwError(error);
-    // });
-    // fetchCompanyProfile().catch((error) => {
-    //   throwError(error);
-    // });
+    // const fetchQuoteData = async () => { ... };
+    // const fetchCompanyProfile = async () => { ... };
   }, [location]);
 
   const queryWatchLists = async (symbolParam: string | null) => {
@@ -89,7 +65,7 @@ export const StockQuotePage: React.FC = () => {
     var inWatchList = false;
     if (Array.isArray(wls)) {
       let tempWls: Watchlists = {};
-      wls.forEach((wl, i) => {
+      wls.forEach((wl) => {
         if (!tempWls[wl.watchlistName]) {
           tempWls[wl.watchlistName] = [];
         }
@@ -133,103 +109,104 @@ export const StockQuotePage: React.FC = () => {
 
   return (
     <div style={{ backgroundColor: colorTheme === 'dark' ? '#333' : 'white' }}>
-      <Box sx={{ flexGrow: 1, padding: '20px' }}>
-        <AddStockDialog
-          addStockSymbol={stockQuotePageState.symbolParam}
-          watchlists={stockQuotePageState.watchlists}
-          setWatchlists={(wl) => {
-            var keys = Object.keys(wl);
-            setStockQuotePageState({
-              ...stockQuotePageState,
-              watchlists: wl,
-              isInWatchList: keys.some((key) =>
-                wl[key].some((ti) => ti.symbol.toUpperCase() === stockQuotePageState.symbolParam?.toUpperCase())
-              )
-            });
-          }}
-          isAddStockDialog={isAddStockDialog}
-          setAddStockDialog={setAddStockDialog}
-        />
-        <Grid container spacing={2}>
-          <Grid xs={6} display="flex" justifyContent="left" alignItems="left">
-            <Item elevation={0}>
-              <ToggleButton
-                value="check"
-                selected={colorTheme === 'dark'}
-                onChange={toggleTheme}
-                color={colorTheme === 'dark' ? 'primary' : 'secondary'}
-              >
-                Toggle Theme
-              </ToggleButton>
-            </Item>
-          </Grid>
-          <Grid xs={6} display="flex" justifyContent="right" alignItems="right">
-            {/* Hide button if unable to fetch watchlists */}
-            {Object.keys(stockQuotePageState.watchlists).length > 0 && (
+      <Container maxWidth="xl">
+        <Box sx={{ flexGrow: 1, paddingY: '20px', paddingX: { xs: '6px', sm: '12px', md: '24px' } }}>
+          <AddStockDialog
+            addStockSymbol={stockQuotePageState.symbolParam}
+            watchlists={stockQuotePageState.watchlists}
+            setWatchlists={(wl) => {
+              var keys = Object.keys(wl);
+              setStockQuotePageState({
+                ...stockQuotePageState,
+                watchlists: wl,
+                isInWatchList: keys.some((key) =>
+                  wl[key].some((ti) => ti.symbol.toUpperCase() === stockQuotePageState.symbolParam?.toUpperCase())
+                )
+              });
+            }}
+            isAddStockDialog={isAddStockDialog}
+            setAddStockDialog={setAddStockDialog}
+          />
+          <Grid container spacing={2}>
+            <Grid xs={6} display="flex" justifyContent="left" alignItems="left">
               <Item elevation={0}>
-                <Button
-                  sx={{
-                    backgroundColor: stockQuotePageState.isInWatchList
-                      ? 'var(--secondary-button-bg-color)'
-                      : 'var(--navbar-bg-color)'
-                  }}
-                  component="label"
-                  variant="contained"
-                  onClick={handleAddToWatchlist}
-                  size="large"
-                  startIcon={stockQuotePageState.isInWatchList ? <CheckCircle /> : <AddCircleOutlineOutlinedIcon />}
+                <ToggleButton
+                  value="check"
+                  selected={colorTheme === 'dark'}
+                  onChange={toggleTheme}
+                  color={colorTheme === 'dark' ? 'primary' : 'secondary'}
                 >
-                  {stockQuotePageState.isInWatchList ? 'Added' : 'Add To Watchlist'}
-                </Button>{' '}
+                  Toggle Theme
+                </ToggleButton>
               </Item>
-            )}
-          </Grid>
-          <Grid xs={7}>
-            <Item elevation={0}>
-              <SymbolInfo symbol={stockQuotePageState.symbolParam} colorTheme={colorTheme} autosize></SymbolInfo>
-              <MiniChart
+            </Grid>
+            <Grid xs={6} display="flex" justifyContent="right" alignItems="right">
+              {Object.keys(stockQuotePageState.watchlists).length > 0 && (
+                <Item elevation={0}>
+                  <Button
+                    sx={{
+                      backgroundColor: stockQuotePageState.isInWatchList
+                        ? 'var(--secondary-button-bg-color)'
+                        : 'var(--navbar-bg-color)'
+                    }}
+                    component="label"
+                    variant="contained"
+                    onClick={handleAddToWatchlist}
+                    size="large"
+                    startIcon={stockQuotePageState.isInWatchList ? <CheckCircle /> : <AddCircleOutlineOutlinedIcon />}
+                  >
+                    {stockQuotePageState.isInWatchList ? 'Added' : 'Add To Watchlist'}
+                  </Button>
+                </Item>
+              )}
+            </Grid>
+            <Grid xs={7}>
+              <Item elevation={0}>
+                <SymbolInfo symbol={stockQuotePageState.symbolParam} colorTheme={colorTheme} autosize></SymbolInfo>
+                <MiniChart
+                  colorTheme={colorTheme}
+                  width="100%"
+                  symbol={stockQuotePageState.symbolParam}
+                  autosize
+                ></MiniChart>
+              </Item>
+            </Grid>
+            <Grid xs={5}>
+              <Item elevation={0}>
+                <TechnicalAnalysis
+                  colorTheme={colorTheme}
+                  symbol={stockQuotePageState.symbolParam || ''}
+                  width="100%"
+                ></TechnicalAnalysis>
+              </Item>
+            </Grid>
+            <Grid xs={12}>
+              <Item elevation={0}>
+                <TradingViewChart theme={colorTheme} symbol={stockQuotePageState.symbolParam || ''} />
+              </Item>
+            </Grid>
+            <Grid xs={6}>
+              <Item elevation={0}>
+                <FundamentalData
+                  colorTheme={colorTheme}
+                  symbol={stockQuotePageState.symbolParam}
+                  height={760}
+                  width="100%"
+                ></FundamentalData>
+              </Item>
+            </Grid>
+            <Grid xs={6}>
+              <Timeline
                 colorTheme={colorTheme}
-                width="100%"
-                symbol={stockQuotePageState.symbolParam}
-                autosize
-              ></MiniChart>
-            </Item>
-          </Grid>
-          <Grid xs={5}>
-            <Item elevation={0}>
-              <TechnicalAnalysis
-                colorTheme={colorTheme}
-                symbol={stockQuotePageState.symbolParam || ''}
-                width="100%"
-              ></TechnicalAnalysis>
-            </Item>
-          </Grid>
-          <Grid xs={12}>
-            <Item elevation={0}>
-              <TradingViewChart theme={colorTheme} symbol={stockQuotePageState.symbolParam || ''} />
-            </Item>
-          </Grid>
-          <Grid xs={6}>
-            <Item elevation={0}>
-              <FundamentalData
-                colorTheme={colorTheme}
+                feedMode="symbol"
                 symbol={stockQuotePageState.symbolParam}
                 height={760}
                 width="100%"
-              ></FundamentalData>
-            </Item>
+              ></Timeline>
+            </Grid>
           </Grid>
-          <Grid xs={6}>
-            <Timeline
-              colorTheme={colorTheme}
-              feedMode="symbol"
-              symbol={stockQuotePageState.symbolParam}
-              height={760}
-              width="100%"
-            ></Timeline>
-          </Grid>
-        </Grid>
-      </Box>
+        </Box>
+      </Container>
     </div>
   );
 };
