@@ -20,7 +20,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { getErrorResponse } from '../../helper/errorResponse';
-import { Positions } from '../../interfaces/IPositionsModel';
+import { PositionMap } from '../../interfaces/IPurchasedStockModel';
 import { IStockQuote } from '../../interfaces/IStockQuote';
 import { PositionsApiService } from '../../services/PositionsApiService';
 import { StockApiService } from '../../services/StockApiService';
@@ -36,6 +36,7 @@ interface AddPositionDialogProps {
   onStockInfoLoaded?: (stockInfo: IStockQuote) => void;
 }
 
+
 const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
   addStockSymbol,
   positions,
@@ -44,6 +45,7 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
   setAddStockDialog,
   onStockInfoLoaded
 }) => {
+
   const [addStockPrice, setAddStockPrice] = useState('');
   const [addStockQuantity, setAddStockQuantity] = useState('');
   const [addStockDate, setAddStockDate] = useState<Date | null>(null);
@@ -221,14 +223,14 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
         throw new Error(`Could not find stock with symbol ${tickers.symbol} in the database!`);
       }
 
-      await PositionsApiService.addStockToPurchasedStocks(tickers);
+      await onAddTicker(tickers);
 
       const updatedPurchasedStocks = await PositionsApiService.fetchPurchasedStocksByUserId();
       if (!updatedPurchasedStocks) {
         throw new Error(`Cannot find the purchased stocks data after adding new stocks`);
       }
 
-      const updatedPositions: Positions = {};
+      const updatedPositions: PositionMap = {};
       for (const key in positions) {
         updatedPositions[key] = positions[key];
       }

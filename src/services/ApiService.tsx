@@ -13,8 +13,7 @@ export class BaseApiService {
   public static get apiService(): AxiosInstance {
     if (BaseApiService._apiService == null) {
       BaseApiService._apiService = axios.create({
-        baseURL: 'https://13.91.83.33/',
-        //baseURL: "http://localhost:80",
+        baseURL: 'http://localhost',
         // baseURL: process.env.REACT_APP_BACKEND_URL || '',
         headers: {
           'Content-Type': 'application/json',
@@ -24,7 +23,7 @@ export class BaseApiService {
 
       // Add a request interceptor to include the Firebase token
       BaseApiService._apiService.interceptors.request.use(async (config) => {
-        const auth = getAuth();
+        const auth = getAuth(); // Use the initialized app
         const user = auth.currentUser;
         if (user) {
           const token = await user.getIdToken();
