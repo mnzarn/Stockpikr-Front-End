@@ -5,14 +5,17 @@ import { useEffect, useState } from 'react';
 import LogoImage from '../assets/images/logo-title-light-mode.png';
 import '../index.css';
 import { auth } from '../services/FirebaseConfig';
+import { UserApiService } from '../services/UserApiService';
+
 export default function SignIn() {
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleGoogleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider); 
-      window.location.href = '/dashboard';
+      const result = await signInWithPopup(auth, provider);
+      await UserApiService.createUserIfNotExists();
+      window.location.href = '/#/dashboard';
     } catch (error) {
       setErrorMessage((error as Error).message);
     }

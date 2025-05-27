@@ -1,7 +1,10 @@
 export interface IUserInfo {
-  uid: string;
-  displayName: string;
+  authID: string;
+  userID: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  phoneNumber?: string; 
-  photoURL?: string;  
+  phoneNumber?: string;
+  profilePic?: string;
+  notifications: boolean;
 }

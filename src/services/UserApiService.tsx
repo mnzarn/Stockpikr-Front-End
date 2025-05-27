@@ -18,7 +18,34 @@ export class UserApiService extends BaseApiService {
       console.log('Error fetching user details:', error);
       return null;
     }
-  }  
+  }
+  
+  public static async createUserIfNotExists(): Promise<IUserInfo | null> {
+    try {
+      return await this.postData<IUserInfo>(`${this.endpoint}`, {});
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return null;
+    }
+  }
+
+  public static async getNotificationSetting(): Promise<{ notifications: boolean } | null> {
+    try {
+      return await this.fetchData<{ notifications: boolean }>(`${this.endpoint}/notifications`);
+    } catch (error) {
+      console.error('Error fetching notifications setting:', error);
+      return null;
+    }
+  }
+
+  public static async toggleNotifications(enabled: boolean): Promise<IUserInfo | null> {
+    try {
+      return await this.patchData<IUserInfo>(`${this.endpoint}/notifications`, { enabled });
+    } catch (error) {
+      console.error('Error toggling notifications:', error);
+      return null;
+    }
+  }
 
   // public static async isUserLoggedIn(): Promise<boolean> {
   //   try {

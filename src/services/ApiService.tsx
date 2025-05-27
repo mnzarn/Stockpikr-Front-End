@@ -23,7 +23,7 @@ export class BaseApiService {
 
       // Add a request interceptor to include the Firebase token
       BaseApiService._apiService.interceptors.request.use(async (config) => {
-        const auth = getAuth();
+        const auth = getAuth(); // Use the initialized app
         const user = auth.currentUser;
         if (user) {
           const token = await user.getIdToken();

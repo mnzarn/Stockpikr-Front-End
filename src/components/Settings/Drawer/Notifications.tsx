@@ -1,5 +1,7 @@
 import { Box, Divider, FormControlLabel, Paper, Switch, Typography } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { UserApiService } from '../../../services/UserApiService';
+
 import '../../../index.css';
 
 interface NotificationsProps {
@@ -8,16 +10,40 @@ interface NotificationsProps {
 }
 
 export const Notifications: React.FC<NotificationsProps> = ({ emailNotifications, phoneNotifications }) => {
-  const [emailToggle, setEmailToggle] = useState(emailNotifications);
-  const [phoneToggle, setPhoneToggle] = useState(phoneNotifications);
+  const [emailToggle, setEmailToggle] = useState(false);
+  // const [phoneToggle, setPhoneToggle] = useState(phoneNotifications);
 
-  const handleEmailToggle = () => {
-    setEmailToggle(!emailToggle);
+  
+useEffect(() => {
+  const fetchNotificationSetting = async () => {
+    try {
+      const response = await UserApiService.getNotificationSetting();
+      if (response && typeof response.notifications === 'boolean') {
+        setEmailToggle(response.notifications);
+      }
+    } catch (error) {
+      console.error("Failed to fetch notification setting:", error);
+    }
   };
 
-  const handlePhoneToggle = () => {
-    setPhoneToggle(!phoneToggle);
-  };
+  fetchNotificationSetting();
+}, []);
+
+const handleEmailToggle = async () => {
+  const newValue = !emailToggle;
+  setEmailToggle(newValue);
+  try {
+    await UserApiService.toggleNotifications(newValue);
+  } catch (error) {
+    console.error("Failed to update notification setting:", error);
+    setEmailToggle(!newValue);
+  }
+};
+
+
+  // const handlePhoneToggle = () => {
+  //   setPhoneToggle(!phoneToggle);
+  // };
 
   return (
     <Paper
@@ -127,7 +153,8 @@ export const Notifications: React.FC<NotificationsProps> = ({ emailNotifications
           />
         </Box>
 
-        <Box
+        { /* Commented out for now, can be added later if needed */}
+        {/* <Box
           sx={{
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
@@ -178,7 +205,7 @@ export const Notifications: React.FC<NotificationsProps> = ({ emailNotifications
               </Typography>
             }
           />
-        </Box>
+        </Box> */}
 
         <Typography
           variant="h5"
@@ -193,7 +220,8 @@ export const Notifications: React.FC<NotificationsProps> = ({ emailNotifications
           Additional Settings
         </Typography>
 
-        <Box
+        { /* Commented out for now, can be added later if needed */}
+        {/* <Box
           sx={{
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
@@ -242,7 +270,7 @@ export const Notifications: React.FC<NotificationsProps> = ({ emailNotifications
               </Typography>
             }
           />
-        </Box>
+        </Box> */}
 
         <Box
           sx={{
