@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import { getErrorResponse } from '../../helper/errorResponse';
 import IStockData from '../../interfaces/IStockData';
 import { StockApiService } from '../../services/StockApiService';
+import { useApiLimit } from '../ApiLimitContext';
 
 interface WatchlistSearchBarProps {
   setAddStockSymbol: (symbol: string) => void;
@@ -19,6 +20,7 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
   const [searchOptions, setSearchOptions] = useState<IStockData[]>([]);
   const [inputSearch, setInputSearch] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const { showApiLimit } = useApiLimit();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleOnChangeTextField = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,7 +56,12 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
       } else {
         setSearchOptions(response);
       }
-    } catch (err) {
+    } catch (err: any) {
+      const apiErrorMessage = StockApiService.getErrorMessage(err);
+            
+      if (apiErrorMessage.toLowerCase().includes('api limit')) {
+        showApiLimit(apiErrorMessage);
+      }
       setSearchOptions([]);
     } finally {
       setLoading(false);

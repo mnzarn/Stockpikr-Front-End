@@ -18,6 +18,7 @@ import { IStockQuote } from '../../interfaces/IStockQuote';
 import { MinimalWatchlistTicker, Watchlists } from '../../interfaces/IWatchlistModel';
 import { StockApiService } from '../../services/StockApiService';
 import { WatchlistApiService } from '../../services/WatchlistApiService';
+import { useApiLimit } from '../ApiLimitContext';
 import { useAsyncError } from '../GlobalErrorBoundary';
 import { WatchlistTabSelector } from './WatchlistTabSelector';
 
@@ -48,6 +49,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const throwError = useAsyncError();
+  const { showApiLimit } = useApiLimit();
 
   // Reset sellPrice when dialog opens with a new stock
   useEffect(() => {
@@ -71,8 +73,14 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
         return;
       }
       setStockInfo(response);
-    } catch (error) {
-      console.error('Error fetching stock data:', error);
+    } catch (error: any) {
+      const apiErrorMessage = StockApiService.getErrorMessage(error);
+      
+      if (apiErrorMessage.toLowerCase().includes('api limit')) {
+        showApiLimit(apiErrorMessage);
+      } else {
+        throwError(error);
+      }
     }
   };
 
@@ -145,7 +153,21 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
         alertPrice: parseFloat(sellPrice)
       };
 
-      const searchResult = await StockApiService.fetchDetailedStock(ticker.symbol);
+      let searchResult;
+      try {
+        searchResult = await StockApiService.fetchDetailedStock(ticker.symbol);
+      } catch (error: any) {
+        const apiErrorMessage = StockApiService.getErrorMessage(error);
+      
+        if (apiErrorMessage.toLowerCase().includes('api limit')) {
+          showApiLimit(apiErrorMessage);
+          return;
+        } else {
+          throwError(error);
+          return;
+        }
+      }
+
       if (!searchResult) {
         throw `Could not find stock with symbol ${ticker.symbol} in the database!`;
       }
