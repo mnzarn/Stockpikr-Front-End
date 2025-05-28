@@ -1,28 +1,7 @@
-export const validatePositionName = (name: string): { valid: boolean; message: string } => {
-  const validPattern = /^[a-zA-Z0-9\-_'\s]+$/;
-
-  if (!validPattern.test(name)) {
-    const invalidChars = name.split('').filter((char) => !validPattern.test(char));
-    const uniqueInvalidChars = [...new Set(invalidChars)];
-
-    return {
-      valid: false,
-      message: `Position name can only contain letters, numbers, hyphens (-), underscores (_), apostrophes ('), and spaces. Invalid characters: ${uniqueInvalidChars.join(' ')}`
-    };
-  }
-
-  return {
-    valid: true,
-    message: ''
-  };
-};
-import AddIcon from '@mui/icons-material/Add';
-
 import DeleteIcon from '@mui/icons-material/Delete';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import {
-  Alert,
   Box,
   Button,
   Checkbox,
@@ -33,26 +12,27 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
-  Paper, Tab, Table,
+  Paper,
+  Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow, Tabs,
-  TextField,
+  TableRow,
   Tooltip,
   Typography
 } from '@mui/material';
 import React, { useEffect, useMemo, useState } from 'react';
+
 import { getErrorResponse } from '../../helper/errorResponse';
-import { Positions, Ticker } from '../../interfaces/IPurchasedStockModel';
+import { getUserID } from '../../helper/userID';
+import { PositionTickers } from '../../interfaces/IPositionsModel';
 import { IStockQuote } from '../../interfaces/IStockQuote';
 import { PositionsApiService } from '../../services/PositionsApiService';
 import { StockApiService } from '../../services/StockApiService';
 import { useAsyncError } from '../GlobalErrorBoundary';
 import WatchlistTickersSearchBar from '../Watchlist/WatchlistTickersSearchBar';
 import AddPositionDialog from './AddPositionDialog';
-
 
 type Order = 'asc' | 'desc';
 
@@ -64,15 +44,15 @@ interface EnhancedTableToolbarProps {
 
 const EnhancedTableToolbar: React.FC<EnhancedTableToolbarProps> = (props) => {
   const { numSelected } = props;
-  const [isDeleteTicker, setDeleteTicker] = useState(false);
+  const [isDeletePositionTickers, setDeletePositionTickers] = useState(false);
 
   const onCancelDeleteTickers = () => {
-    setDeleteTicker(false);
+    setDeletePositionTickers(false);
   };
 
   const onConfirmDeleteTickers = () => {
     props.handleDeleteStocks();
-    setDeleteTicker(false);
+    setDeletePositionTickers(false);
   };
 
   return (
@@ -99,7 +79,7 @@ const EnhancedTableToolbar: React.FC<EnhancedTableToolbarProps> = (props) => {
       {numSelected > 0 ? (
         <Box>
           <Tooltip title="Delete">
-            <IconButton onClick={() => setDeleteTicker(true)}>
+            <IconButton onClick={() => setDeletePositionTickers(true)}>
               <DeleteIcon />
             </IconButton>
           </Tooltip>
@@ -108,7 +88,7 @@ const EnhancedTableToolbar: React.FC<EnhancedTableToolbarProps> = (props) => {
         <Box />
       )}
 
-      <Dialog open={isDeleteTicker} onClose={onCancelDeleteTickers}>
+      <Dialog open={isDeletePositionTickers} onClose={onCancelDeleteTickers}>
         <DialogTitle>Delete selected positions</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -126,32 +106,24 @@ const EnhancedTableToolbar: React.FC<EnhancedTableToolbarProps> = (props) => {
 
 export default function MyPositions() {
   const [order, setOrder] = useState<Order>('asc');
-  const [orderBy, setOrderBy] = useState<keyof Ticker>('symbol');
+  const [orderBy, setOrderBy] = useState<keyof PositionTickers>('symbol');
   const [selected, setSelected] = useState<string[]>([]);
-  const [positions, setPositions] = useState<{ [key: string]: Ticker[] }>({});
+  const [positions, setPositions] = useState<{ [key: string]: PositionTickers[] }>({});
   const [isAddStockDialog, setAddStockDialog] = useState(false);
   const [addStockSymbol, setAddStockSymbol] = useState('');
   const [stockInfo, setStockInfo] = useState<IStockQuote>();
-  const [positionKey, setPositionKey] = useState('');
-const [positionKeys, setPositionKeys] = useState<string[]>([]);
-const [createPositionOpen, setCreatePositionOpen] = useState(false);
-const [newPositionName, setNewPositionName] = useState('');
-const [positionNameError, setPositionNameError] = useState('');
+  const [portfolioName, setPortfolioName] = useState<string>('');
   const throwError = useAsyncError();
 
   // Generate a unique ID for each position to use for selection
-  const generatePositionId = (position: Ticker): string => {
-const datePart = position.purchaseDate ? new Date(position.purchaseDate).getTime() : 'null';
-return `${position.symbol}-${datePart}-${position.purchasePrice}-${position.quantity}`;
-  };
-  const refreshPositions = (positions: Positions) => {
-    setPositions(positions);
-    setPositionKeys(Object.keys(positions));
+  const generatePositionId = (position: PositionTickers): string => {
+    return `${position.symbol}-${position.purchaseDate}-${position.purchasePrice}-${position.quantity}`;
   };
 
   const isSelected = (positionId: string) => selected.indexOf(positionId) !== -1;
 
-  const fetchStockData = async (symbol: string): Promise<void> => {
+  // Fetch stock data and immediately open dialog
+  const fetchStockDataAndOpenDialog = async (symbol: string): Promise<void> => {
     if (!symbol) return;
 
     try {
@@ -160,30 +132,35 @@ return `${position.symbol}-${datePart}-${position.purchasePrice}-${position.quan
         return;
       }
       setStockInfo(response);
+      setAddStockDialog(true); // Open dialog as soon as stock data is fetched
     } catch (error) {
       console.error('Error fetching stock data:', error);
     }
   };
 
+  // When addStockSymbol changes, fetch data and open dialog
   useEffect(() => {
     if (addStockSymbol) {
-      fetchStockData(addStockSymbol);
+      fetchStockDataAndOpenDialog(addStockSymbol);
     }
   }, [addStockSymbol]);
 
   // Get all positions as a flattened array with unique IDs
   // Use useMemo to prevent recreating this array on every render
-  const positionsForSelectedPortfolio = useMemo(() => {
-  return (positions[positionKey] || []).map(position => ({
-    ...position,
-    positionId: generatePositionId(position)
-  }));
-}, [positions, positionKey]);
+  const allPositionsWithIds = useMemo(() => {
+    return Object.values(positions)
+      .flatMap((positionsArray) => 
+        positionsArray.map(position => ({
+          ...position,
+          positionId: generatePositionId(position)
+        }))
+      );
+  }, [positions]);
 
   // Sort positions using the comparator
- const sortedPositions = useMemo(() => {
-  return [...positionsForSelectedPortfolio].sort(getComparator(order, orderBy));
-}, [positionsForSelectedPortfolio, order, orderBy]);
+  const sortedPositions = useMemo(() => {
+    return [...allPositionsWithIds].sort(getComparator(order, orderBy));
+  }, [allPositionsWithIds, order, orderBy]);
 
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
@@ -198,39 +175,6 @@ return `${position.symbol}-${datePart}-${position.purchasePrice}-${position.quan
     setSelected([]);
   };
 
-  const handleAddStockToPortfolio = async (newTicker: Ticker) => {
-  if (!positionKey) return;
-
-  const existing = positions[positionKey] || [];
-
-  const alreadyExists = existing.some(t => t.symbol.toUpperCase() === newTicker.symbol.toUpperCase());
-  if (alreadyExists) {
-    alert(`Ticker ${newTicker.symbol} already exists in "${positionKey}"`);
-    return;
-  }
-
-  const updatedTickers = [...existing, newTicker];
-
-  try {
-    const updated = await PositionsApiService.updatePurchasedStockTickers(positionKey, updatedTickers);
-if (updated) {
-  setPositions(prev => ({
-    ...prev,
-    [positionKey]: updatedTickers // not `updated.tickers`
-  }));
-  setAddStockDialog(false);
-  setAddStockSymbol('');
-  // Optional: await queryPurchasedStocks(); only if you suspect backend drift
-}
-
-  } catch (error) {
-    console.error("Failed to add stock to portfolio:", error);
-  }
-};
-
-
-
-
   const handleDeleteStocks = async () => {
     try {
       // Extract symbols from position IDs
@@ -239,10 +183,10 @@ if (updated) {
       // Remove duplicates
       const uniqueSymbolsToDelete = [...new Set(symbolsToDelete)];
       
-      const patchResult = await PositionsApiService.deleteTickersFromPortfolio(positionKey, uniqueSymbolsToDelete);
+      const patchResult = await PositionsApiService.deleteStocksInWatchlist(uniqueSymbolsToDelete);
       if (patchResult && patchResult.matchedCount > 0 && patchResult.modifiedCount > 0) {
         // Optimistically update UI
-        const updatedPositions: { [key: string]: Ticker[] } = {};
+        const updatedPositions: { [key: string]: PositionTickers[] } = {};
         for (const key in positions) {
           updatedPositions[key] = positions[key].filter((position) => {
             const positionId = generatePositionId(position);
@@ -258,71 +202,26 @@ if (updated) {
       throwError(error);
     }
   };
-  const handleCreateNewPosition = async () => {
-  setPositionNameError('');
 
-  if (!newPositionName.trim()) return;
-
-  const name = newPositionName.trim();
-  if (positionKeys.includes(name)) {
-    setPositionNameError('A position set with this name already exists.');
-    return;
-  }
-
-  const validation = validatePositionName(name);
-  if (!validation.valid) {
-    setPositionNameError(validation.message);
-    return;
-  }
-
-  try {
-    const result = await PositionsApiService.createPurchasedStockPortfolio(name, []);
-    if (result) {
-      const updated = { ...positions, [name]: [] };
-      setPositions(updated);
-      setPositionKeys(Object.keys(updated));
-      setPositionKey(name);
-      setCreatePositionOpen(false);
-      setNewPositionName('');
-    } else {
-      setPositionNameError('Failed to create position.');
-    }
-  } catch (error) {
-    console.error('Error creating position:', error);
-    setPositionNameError('Something went wrong.');
-  }
-};
-
-  
-
-  const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof Ticker) => {
+  const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof PositionTickers) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
   };
 
- const queryPurchasedStocks = async () => {
-  try {
-    const result = await PositionsApiService.fetchPurchasedStocksByUserId();
-    console.log('Fetched portfolios:', result);
-   const updated: { [key: string]: Ticker[] } = {};
-  result.forEach(r => {
-  updated[r.purchasedstocksName] = r.tickers; // r.name is the portfolio/position set name
-});
-const keys = Object.keys(updated);
-
-    setPositions(updated);
-    console.log('Updated positions:', updated);
-    setPositionKeys(keys);
-
-    if (!positionKey && keys.length > 0) {
-      setPositionKey(keys[0]); // ✅ set default selected tab
+  const queryPurchasedStocks = async () => {
+    try {
+      const wls = await PositionsApiService.fetchPurchasedStocksByUserId();
+      const userID = await getUserID();
+      setPortfolioName(userID); // Set portfolio name to userID
+      
+      const updatedPositions: { [key: string]: PositionTickers[] } = {};
+      updatedPositions[userID] = wls.flatMap((positions) => positions.tickers);
+      setPositions(updatedPositions);
+    } catch (error) {
+      throwError(error);
     }
-  } catch (error) {
-    throwError(error);
-  }
-};
-
+  };
 
   useEffect(() => {
     queryPurchasedStocks();
@@ -342,6 +241,12 @@ const keys = Object.keys(updated);
       newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
     }
     setSelected(newSelected);
+  };
+
+  // Handle closing the add position dialog
+  const handleCloseAddStockDialog = () => {
+    setAddStockDialog(false);
+    setAddStockSymbol(''); // Clear the symbol when dialog closes
   };
 
   // Format currency values consistently
@@ -375,7 +280,7 @@ const keys = Object.keys(updated);
   };
 
   // Custom comparator that handles null values and dates
-  function descendingComparator(a: Ticker & { positionId: string }, b: Ticker & { positionId: string }, orderBy: keyof Ticker) {
+  function descendingComparator(a: PositionTickers & { positionId: string }, b: PositionTickers & { positionId: string }, orderBy: keyof PositionTickers) {
     // Special handling for purchaseDate which can be Date | null | string
     if (orderBy === 'purchaseDate') {
       // Handle null values
@@ -410,8 +315,8 @@ const keys = Object.keys(updated);
 
   function getComparator(
     order: Order,
-    orderBy: keyof Ticker
-  ): (a: Ticker & { positionId: string }, b: Ticker & { positionId: string }) => number {
+    orderBy: keyof PositionTickers
+  ): (a: PositionTickers & { positionId: string }, b: PositionTickers & { positionId: string }) => number {
     return order === 'desc'
       ? (a, b) => descendingComparator(a, b, orderBy)
       : (a, b) => -descendingComparator(a, b, orderBy);
@@ -449,63 +354,6 @@ const keys = Object.keys(updated);
             My Positions
           </Typography>
         </Box>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', mt: 2 }}>
-  <Tabs
-    value={positionKey}
-  onChange={(e, val) => {
-    setPositionKey(val);
-    // Optional: Debug which tab is selected
-    console.log('Selected portfolio:', val);
-  }}
-    variant="scrollable"
-    scrollButtons="auto"
-    sx={{
-      '& .MuiTab-root': {
-        fontFamily: 'var(--font-family)',
-        color: 'var(--secondary-blue)',
-        '&.Mui-selected': {
-          color: 'var(--primary-blue)',
-          fontWeight: 600
-        }
-      },
-      '& .MuiTabs-indicator': {
-        backgroundColor: 'var(--primary-blue)'
-      }
-    }}
-  >
-    {positionKeys.map((key) => (
-      <Tab
-        key={key}
-        label={key}
-        value={key}
-        sx={{
-          textTransform: 'none',
-          fontWeight: positionKey === key ? 600 : 400
-        }}
-      />
-    ))}
-  </Tabs>
-
-  <Button
-    startIcon={<AddIcon />}
-    onClick={() => {
-      setPositionNameError('');
-      setCreatePositionOpen(true);
-    }}
-    sx={{
-      ml: 1,
-      color: 'var(--primary-blue)',
-      borderRadius: '12px',
-      textTransform: 'none',
-      fontWeight: 600,
-      '&:hover': {
-        backgroundColor: 'var(--background-light)'
-      }
-    }}
-  >
-    Create
-  </Button>
-</Box>
 
         {/* Search and add stock section */}
         <Box
@@ -535,12 +383,7 @@ const keys = Object.keys(updated);
           <Box display="inline-flex" alignItems="center">
             <WatchlistTickersSearchBar
               setAddStockSymbol={setAddStockSymbol}
-              onSelectStock={() => {
-                if (addStockSymbol && positionKey) {
-                  setAddStockDialog(true);
-                }
-              }}
-              isDisabled={!positionKey}
+              onSelectStock={() => {}} // No need for this since the useEffect will handle it
             />
           </Box>
         </Box>
@@ -584,7 +427,7 @@ const keys = Object.keys(updated);
                 >
                   <Box
                     component="div"
-                    onClick={(e) => handleRequestSort(e, column.id as keyof Ticker)}
+                    onClick={(e) => handleRequestSort(e, column.id as keyof PositionTickers)}
                     sx={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -669,9 +512,9 @@ const keys = Object.keys(updated);
                       >
                         {row.symbol}
                       </Box>
-                      {row.priceChange && (
+                      {row.exchange && (
                         <Chip
-                          label={row.priceChange}
+                          label={row.exchange}
                           size="small"
                           sx={{
                             ml: 1,
@@ -725,44 +568,15 @@ const keys = Object.keys(updated);
         </Table>
       </Box>
 
+      {/* Add Position Dialog with portfolio name */}
       <AddPositionDialog
-  positions={positions}
-  setPositions={setPositions}
-  addStockSymbol={addStockSymbol}
-  isAddStockDialog={isAddStockDialog}
-  setAddStockDialog={setAddStockDialog}
-  onAddTicker={handleAddStockToPortfolio}
-/>
-
-      <Dialog open={createPositionOpen} onClose={() => setCreatePositionOpen(false)}>
-  <DialogTitle>Create New Position Set</DialogTitle>
-  <DialogContent>
-    <DialogContentText sx={{ mb: 2 }}>
-      Enter a name for your new position set:
-    </DialogContentText>
-
-    {positionNameError && (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        {positionNameError}
-      </Alert>
-    )}
-
-    <TextField
-      autoFocus
-      fullWidth
-      label="Position Name"
-      value={newPositionName}
-      onChange={(e) => setNewPositionName(e.target.value)}
-    />
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setCreatePositionOpen(false)}>Cancel</Button>
-    <Button onClick={handleCreateNewPosition} disabled={!newPositionName.trim()}>
-      Create
-    </Button>
-  </DialogActions>
-</Dialog>
-
+        positions={positions}
+        setPositions={setPositions}
+        addStockSymbol={addStockSymbol}
+        isAddStockDialog={isAddStockDialog}
+        setAddStockDialog={handleCloseAddStockDialog}
+        portfolioName={portfolioName} // Pass the portfolioName prop
+      />
     </TableContainer>
   );
 }

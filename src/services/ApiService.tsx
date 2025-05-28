@@ -14,6 +14,7 @@ export class BaseApiService {
     if (BaseApiService._apiService == null) {
       BaseApiService._apiService = axios.create({
         baseURL: 'https://13.91.83.33/',
+        //baseURL: "http://localhost:80",
         // baseURL: process.env.REACT_APP_BACKEND_URL || '',
         headers: {
           'Content-Type': 'application/json',
@@ -117,11 +118,9 @@ export class BaseApiService {
     }
   }
 
-  //----------------------------------------------------------------//
-  //                           Private
-  //----------------------------------------------------------------//
-
-  private static getErrorMessage(error: AxiosError): string {
-    return error.code + ': ' + error.message;
+  public static getErrorMessage(error: AxiosError): string {
+    const data = error.response?.data as { error?: string } | undefined;
+    const backendMessage = data?.error;
+    return backendMessage || `${error.code}: ${error.message}`;
   }
 }

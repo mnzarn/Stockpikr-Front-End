@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { getErrorResponse } from '../helper/errorResponse';
 import IStockData from '../interfaces/IStockData';
 import { StockApiService } from '../services/StockApiService';
+import { useApiLimit } from './ApiLimitContext';
 import { useAsyncError } from './GlobalErrorBoundary';
 
 const SearchBar: React.FC = () => {
@@ -14,6 +15,7 @@ const SearchBar: React.FC = () => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const throwError = useAsyncError();
+  const { showApiLimit } = useApiLimit();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -56,16 +58,20 @@ const SearchBar: React.FC = () => {
   };
 
   const fetchData = async (value: string): Promise<void> => {
-    StockApiService.fetchStockSearch(value)
-      .then((response): void => {
-        if (!response || getErrorResponse(response)) {
-          return;
-        }
-        setSearchOptions(response);
-      })
-      .catch((error) => {
+    try {
+      const response = await StockApiService.fetchStockSearch(value);
+      if (!response || getErrorResponse(response)) return;
+
+      setSearchOptions(response);
+    } catch (error: any) {
+      const apiErrorMessage = StockApiService.getErrorMessage(error);
+
+      if (apiErrorMessage.toLowerCase().includes('api limit')) {
+        showApiLimit(apiErrorMessage);
+      } else {
         throwError(error);
-      });
+      }
+    }
   };
 
   const handleEnterPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
