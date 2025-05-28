@@ -121,7 +121,10 @@ export class BaseApiService {
   //                           Private
   //----------------------------------------------------------------//
 
-  private static getErrorMessage(error: AxiosError): string {
-    return error.code + ': ' + error.message;
+
+  public static getErrorMessage(error: AxiosError): string {
+    const data = error.response?.data as { error?: string } | undefined;
+    const backendMessage = data?.error;
+    return backendMessage || `${error.code}: ${error.message}`;
   }
 }
