@@ -54,15 +54,19 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
     if (isAddStockDialog) {
       setSellPrice('');
       setSellPriceError('');
+      // Clear stockInfo to prevent showing previous stock
+      setStockInfo(undefined);
     }
   }, [isAddStockDialog, addStockSymbol]);
 
   // Fetch stock data when symbol changes
   useEffect(() => {
-    if (addStockSymbol) {
+    if (addStockSymbol && isAddStockDialog) {
+      // Clear previous stock info immediately
+      setStockInfo(undefined);
       fetchStockData(addStockSymbol);
     }
-  }, [addStockSymbol]);
+  }, [addStockSymbol, isAddStockDialog]);
 
   const fetchStockData = async (symbol: string): Promise<void> => {
     try {
@@ -70,7 +74,10 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
       if (!response || getErrorResponse(response)) {
         return;
       }
-      setStockInfo(response);
+      // Only set stock info if the symbol matches what we're currently looking for
+      if (symbol === addStockSymbol) {
+        setStockInfo(response);
+      }
     } catch (error) {
       console.error('Error fetching stock data:', error);
     }
@@ -115,6 +122,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
   const onCancelAddStockDialog = () => {
     setSellPrice('');
     setSellPriceError('');
+    setStockInfo(undefined);
     setAddStockDialog(false);
     // Call onClose if provided
     if (onClose) {
@@ -199,163 +207,162 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
       </DialogTitle>
 
       <Divider />
-
       <DialogContent sx={{ pt: 3 }}>
-        {/* Stock Info Section */}
-        <Box sx={{ mb: 3 }}>
-          {stockInfo && (
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-              <Box sx={{ flex: 1 }}>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 600,
-                    color: 'var(--primary-blue)',
-                    fontFamily: 'var(--font-family)'
-                  }}
-                >
-                  {stockInfo.name}
-                </Typography>
+       {/* Stock Info Section */}
+       <Box sx={{ mb: 3 }}>
+         {stockInfo && (
+           <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+             <Box sx={{ flex: 1 }}>
+               <Typography
+                 variant="h6"
+                 sx={{
+                   fontWeight: 600,
+                   color: 'var(--primary-blue)',
+                   fontFamily: 'var(--font-family)'
+                 }}
+               >
+                 {stockInfo.name}
+               </Typography>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                  <Chip
-                    label={stockInfo.exchange}
-                    size="small"
-                    sx={{
-                      mr: 1,
-                      backgroundColor: 'var(--background-light)',
-                      color: 'var(--secondary-blue)',
-                      fontWeight: 500,
-                      fontSize: '0.75rem'
-                    }}
-                  />
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'var(--secondary-blue)',
-                      fontFamily: 'var(--font-family)'
-                    }}
-                  >
-                    Current price:{' '}
-                    <Box component="span" sx={{ fontWeight: 600 }}>
-                      ${stockInfo.price}
-                    </Box>
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-          )}
-        </Box>
+               <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                 <Chip
+                   label={stockInfo.exchange}
+                   size="small"
+                   sx={{
+                     mr: 1,
+                     backgroundColor: 'var(--background-light)',
+                     color: 'var(--secondary-blue)',
+                     fontWeight: 500,
+                     fontSize: '0.75rem'
+                   }}
+                 />
+                 <Typography
+                   variant="body2"
+                   sx={{
+                     color: 'var(--secondary-blue)',
+                     fontFamily: 'var(--font-family)'
+                   }}
+                 >
+                   Current price:{' '}
+                   <Box component="span" sx={{ fontWeight: 600 }}>
+                     ${stockInfo.price}
+                   </Box>
+                 </Typography>
+               </Box>
+             </Box>
+           </Box>
+         )}
+       </Box>
 
-        {/* Watchlist Selection */}
-        {!watchlistName && (
-          <Box sx={{ mb: 3 }}>
-            <Typography
-              variant="body1"
-              sx={{
-                mb: 1,
-                fontWeight: 500,
-                color: 'var(--primary-blue)',
-                fontFamily: 'var(--font-family)'
-              }}
-            >
-              Select watchlist
-            </Typography>
+       {/* Watchlist Selection */}
+       {!watchlistName && (
+         <Box sx={{ mb: 3 }}>
+           <Typography
+             variant="body1"
+             sx={{
+               mb: 1,
+               fontWeight: 500,
+               color: 'var(--primary-blue)',
+               fontFamily: 'var(--font-family)'
+             }}
+           >
+             Select watchlist
+           </Typography>
 
-            <WatchlistTabSelector
-              addStockSymbol={addStockSymbol}
-              showDeleteIcon={false}
-              watchLists={watchlists!}
-              setWatchLists={setWatchlists}
-              selectedWatchList={wlKey}
-              setSelectedWatchList={setWlKey}
-            />
-          </Box>
-        )}
+           <WatchlistTabSelector
+             addStockSymbol={addStockSymbol}
+             showDeleteIcon={false}
+             watchLists={watchlists!}
+             setWatchLists={setWatchlists}
+             selectedWatchList={wlKey}
+             setSelectedWatchList={setWlKey}
+           />
+         </Box>
+       )}
 
-        {/* Sell Price */}
-        <Box>
-          <Typography
-            variant="body1"
-            sx={{
-              mb: 1,
-              fontWeight: 500,
-              color: 'var(--primary-blue)',
-              fontFamily: 'var(--font-family)'
-            }}
-          >
-            At what price would you like to sell {addStockSymbol}?
-          </Typography>
+       {/* Sell Price */}
+       <Box>
+         <Typography
+           variant="body1"
+           sx={{
+             mb: 1,
+             fontWeight: 500,
+             color: 'var(--primary-blue)',
+             fontFamily: 'var(--font-family)'
+           }}
+         >
+           At what price would you like to buy {addStockSymbol}?
+         </Typography>
 
-          <TextField
-            error={!!sellPriceError}
-            helperText={sellPriceError}
-            required
-            fullWidth
-            id="stock-price"
-            label="Sell price"
-            type="text"
-            variant="outlined"
-            value={sellPrice}
-            onChange={handlePriceChange}
-            onBlur={() => validateSellPrice(sellPrice)}
-            InputProps={{
-              startAdornment: (
-                <Box component="span" sx={{ mr: 0.5 }}>
-                  $
-                </Box>
-              )
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                '&.Mui-focused fieldset': {
-                  borderColor: 'var(--primary-blue)'
-                }
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: 'var(--primary-blue)'
-              }
-            }}
-          />
-        </Box>
-      </DialogContent>
+         <TextField
+           error={!!sellPriceError}
+           helperText={sellPriceError}
+           required
+           fullWidth
+           id="stock-price"
+           label="Sell price"
+           type="text"
+           variant="outlined"
+           value={sellPrice}
+           onChange={handlePriceChange}
+           onBlur={() => validateSellPrice(sellPrice)}
+           InputProps={{
+             startAdornment: (
+               <Box component="span" sx={{ mr: 0.5 }}>
+                 $
+               </Box>
+             )
+           }}
+           sx={{
+             '& .MuiOutlinedInput-root': {
+               '&.Mui-focused fieldset': {
+                 borderColor: 'var(--primary-blue)'
+               }
+             },
+             '& .MuiInputLabel-root.Mui-focused': {
+               color: 'var(--primary-blue)'
+             }
+           }}
+         />
+       </Box>
+     </DialogContent>
 
-      <Divider />
+     <Divider />
 
-      <DialogActions sx={{ p: 2 }}>
-        <Button
-          onClick={onCancelAddStockDialog}
-          sx={{
-            color: 'var(--secondary-blue)',
-            textTransform: 'none',
-            fontFamily: 'var(--font-family)',
-            fontWeight: 500
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          onClick={onConfirmAddStockDialog}
-          disabled={!addStockSymbol || !sellPrice || (!watchlistName && !wlKey) || !!sellPriceError}
-          sx={{
-            bgcolor: 'var(--primary-blue)',
-            textTransform: 'none',
-            fontFamily: 'var(--font-family)',
-            fontWeight: 500,
-            '&:hover': {
-              bgcolor: 'var(--secondary-blue)'
-            },
-            '&.Mui-disabled': {
-              bgcolor: 'rgba(0, 0, 0, 0.12)'
-            }
-          }}
-        >
-          Add to Watchlist
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+     <DialogActions sx={{ p: 2 }}>
+       <Button
+         onClick={onCancelAddStockDialog}
+         sx={{
+           color: 'var(--secondary-blue)',
+           textTransform: 'none',
+           fontFamily: 'var(--font-family)',
+           fontWeight: 500
+         }}
+       >
+         Cancel
+       </Button>
+       <Button
+         variant="contained"
+         onClick={onConfirmAddStockDialog}
+         disabled={!addStockSymbol || !sellPrice || (!watchlistName && !wlKey) || !!sellPriceError}
+         sx={{
+           bgcolor: 'var(--primary-blue)',
+           textTransform: 'none',
+           fontFamily: 'var(--font-family)',
+           fontWeight: 500,
+           '&:hover': {
+             bgcolor: 'var(--secondary-blue)'
+           },
+           '&.Mui-disabled': {
+             bgcolor: 'rgba(0, 0, 0, 0.12)'
+           }
+         }}
+       >
+         Add to Watchlist
+       </Button>
+     </DialogActions>
+   </Dialog>
+ );
 };
 
 export default AddStockDialog;

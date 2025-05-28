@@ -2,7 +2,6 @@ import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import EditIcon from '@mui/icons-material/Edit';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import InfoIcon from '@mui/icons-material/Info';
 import { default as NotificationsIcon, default as NotificationsNoneIcon } from '@mui/icons-material/NotificationsNone';
@@ -87,18 +86,16 @@ type FilterMode = 'all' | 'gainers' | 'losers';
 // Timeframe type for analysis period
 type TimeframeMode = '90d' | '180d' | '1y' | '3y' | '5y';
 
-// Enhanced toolbar with edit mode support
+// Enhanced toolbar with filter support
 interface EnhancedTableToolbarProps {
   numSelected: number;
   handleDeleteStocks: () => void;
-  handleEditStocks: () => void;
-  editMode: boolean;
   filterMode: FilterMode;
   handleFilterChange: (mode: FilterMode) => void;
 }
 
 const EnhancedTableToolbar: React.FC<EnhancedTableToolbarProps> = (props) => {
-  const { numSelected, editMode, filterMode, handleFilterChange } = props;
+  const { numSelected, filterMode, handleFilterChange } = props;
   const [isDeleteWatchlistTickers, setDeleteWatchlistTickers] = useState(false);
   const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -199,28 +196,6 @@ const EnhancedTableToolbar: React.FC<EnhancedTableToolbarProps> = (props) => {
 
       {numSelected > 0 ? (
         <Box>
-          {/* Change to a Button with text when in edit mode */}
-          {editMode ? (
-            <Button
-              variant="contained"
-              startIcon={<EditIcon />}
-              onClick={props.handleEditStocks}
-              color="primary"
-              size="small"
-              sx={{
-                textTransform: 'none',
-                borderRadius: '8px'
-              }}
-            >
-              Save
-            </Button>
-          ) : (
-            <Tooltip title="Edit Alert Prices">
-              <IconButton onClick={props.handleEditStocks}>
-                <EditIcon />
-              </IconButton>
-            </Tooltip>
-          )}
           <Tooltip title="Delete">
             <IconButton onClick={() => setDeleteWatchlistTickers(true)}>
               <DeleteIcon />
@@ -576,6 +551,7 @@ export default function Watchlist() {
   // Reordering state
   const [isReorderMode, setIsReorderMode] = useState(false);
   const dragStartIndex = useRef<number | null>(null);
+  const currentOrder = useRef<string[]>([]);
   
   // Dialogs state
   const [isAddStockDialog, setAddStockDialog] = useState(false);
@@ -584,15 +560,17 @@ export default function Watchlist() {
   // Stock data state
   const [addStockSymbol, setAddStockSymbol] = useState('');
   const [alertData, setAlertData] = useState<AlertData>({});
-  const [editingValues, setEditingValues] = useState<{ [key: string]: string }>({});
-  const [alertErrors, setAlertErrors] = useState<{ [key: string]: string }>({});
+
+  // Individual stock editing state
+  const [editingSymbol, setEditingSymbol] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
+  const [alertError, setAlertError] = useState<string>('');
 
   // Table state
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<keyof WatchlistTicker>('symbol');
   const [selected, setSelected] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('full');
-  const [editMode, setEditMode] = useState(false); // Track if we're in edit mode
   const [filterMode, setFilterMode] = useState<FilterMode>('all'); // New filter mode state
 
   // New timeframe selector state
@@ -636,12 +614,14 @@ export default function Watchlist() {
 
   const handleWatchlistDragStart = (index: number) => {
     dragStartIndex.current = index;
+    // Store the current order when drag starts
+    currentOrder.current = [...wlKeys];
   };
 
   const handleWatchlistDragOver = (index: number) => {
     if (dragStartIndex.current === null || dragStartIndex.current === index) return;
     
-    const newOrder = [...wlKeys];
+    const newOrder = [...currentOrder.current];
     const draggedItem = newOrder[dragStartIndex.current];
     
     // Remove from original position
@@ -650,36 +630,43 @@ export default function Watchlist() {
     // Insert at new position
     newOrder.splice(index, 0, draggedItem);
     
-    // Update state
-    setWlKeys(newOrder);
+    // Update the working copy
+    currentOrder.current = newOrder;
     
-    // Update watchlists object
-    const orderedWatchlists: Watchlists = {};
-    newOrder.forEach((key) => {
-      orderedWatchlists[key] = watchLists[key];
-    });
-    setWatchLists(orderedWatchlists);
+    // Update state for visual feedback
+    setWlKeys(newOrder);
     
     // Update drag index to new position
     dragStartIndex.current = index;
   };
 
   const handleWatchlistDragEnd = () => {
+    // Finalize the order
+    setWlKeys([...currentOrder.current]);
+    
+    // Save to localStorage
+    try {
+      localStorage.setItem('watchlistOrder', JSON.stringify(currentOrder.current));
+      console.log('Watchlist order saved during drag end');
+    } catch (error) {
+      console.error('Error saving watchlist order during drag end:', error);
+    }
+    
     dragStartIndex.current = null;
   };
 
-  // Reset editing when selection changes
+  // Clear editing when selection changes
   useEffect(() => {
     if (selected.length === 0) {
-      setEditMode(false);
-      setEditingValues({});
+      setEditingSymbol(null);
+      setEditingValue('');
     }
   }, [selected]);
 
   // Clear editing when changing watchlists
   useEffect(() => {
-    setEditMode(false);
-    setEditingValues({});
+    setEditingSymbol(null);
+    setEditingValue('');
     setFilterMode('all'); // Reset filter when changing watchlists
   }, [wlKey]);
 
@@ -727,8 +714,6 @@ export default function Watchlist() {
         newAlertData[ticker.symbol] = ticker.alertPrice;
       });
       setAlertData(newAlertData);
-      setEditingValues({});
-      setAlertErrors({});
     }
   }, [watchLists[wlKey]]);
 
@@ -848,808 +833,761 @@ export default function Watchlist() {
   };
 
   // Validate price format: positive number with up to 2 decimal places
-  const validateAlertPrice = (price: string | number, symbol: string): boolean => {
+  const validateAlertPrice = (price: string, symbol: string): boolean => {
     const priceStr = String(price).trim();
-// First clean up the string (allow trailing decimal point for UX)
-const cleanedPrice = priceStr.endsWith('.') ? priceStr + '0' : priceStr;
+    // First clean up the string (allow trailing decimal point for UX)
+    const cleanedPrice = priceStr.endsWith('.') ? priceStr + '0' : priceStr;
 
-if (!cleanedPrice) {
-  setAlertErrors({ ...alertErrors, [symbol]: 'Price required' });
-  return false;
-}
-
-// More permissive pattern for validation on blur/submit
-// This allows valid currency formats like 1, 1.5, 10.99
-if (!/^[0-9]+(\.[0-9]{0,2})?$/.test(cleanedPrice)) {
-  setAlertErrors({ ...alertErrors, [symbol]: 'Enter a valid price (e.g., 10.99)' });
-  return false;
-}
-
-const numValue = parseFloat(cleanedPrice);
-if (numValue <= 0) {
-  setAlertErrors({ ...alertErrors, [symbol]: 'Price must be greater than 0' });
-  return false;
-}
-
-// Clear error if valid
-const newErrors = { ...alertErrors };
-delete newErrors[symbol];
-setAlertErrors(newErrors);
-return true;
-};
-
-// Helper functions for sorting
-function getComparator(
-order: Order,
-orderBy: keyof WatchlistTicker
-): (a: WatchlistTicker, b: WatchlistTicker) => number {
-return order === 'desc'
-  ? (a, b) => descendingComparator(a, b, orderBy)
-  : (a, b) => -descendingComparator(a, b, orderBy);
-}
-
-function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
-const valA = a[orderBy];
-const valB = b[orderBy];
-
-// Handle undefined safely
-if (valA == null && valB == null) return 0;
-if (valA == null) return 1;
-if (valB == null) return -1;
-
-if (valB < valA) return -1;
-if (valB > valA) return 1;
-return 0;
-}
-
-// Handle sort order change
-const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof WatchlistTicker) => {
-const isAsc = orderBy === property && order === 'asc';
-setOrder(isAsc ? 'desc' : 'asc');
-setOrderBy(property);
-
-// Force resort with new order
-if (watchLists[wlKey]) {
-  let tickers = [...watchLists[wlKey]];
-  const newOrder = isAsc ? 'desc' : 'asc';
-  tickers.sort(getComparator(newOrder, property));
-
-  // Apply current filter
-  if (filterMode === 'gainers') {
-    tickers = tickers.filter((ticker) => (ticker.changesPercentage || 0) > 0);
-  } else if (filterMode === 'losers') {
-    tickers = tickers.filter((ticker) => (ticker.changesPercentage || 0) < 0);
-  }
-
-  setVisibleTickers(tickers);
-}
-};
-
-const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
-if (event.target.checked && visibleTickers.length > 0) {
-  const newSelected = visibleTickers.map((n) => n.symbol);
-  setSelected(newSelected);
-  return;
-}
-setSelected([]);
-};
-
-const handleSelectStock = (event: React.MouseEvent<unknown>, symbol: string) => {
-const selectedIndex = selected.indexOf(symbol);
-let newSelected: string[] = [];
-
-if (selectedIndex === -1) {
-  newSelected = newSelected.concat(selected, symbol);
-} else if (selectedIndex === 0) {
-  newSelected = newSelected.concat(selected.slice(1));
-} else if (selectedIndex === selected.length - 1) {
-  newSelected = newSelected.concat(selected.slice(0, -1));
-} else if (selectedIndex > 0) {
-  newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
-}
-setSelected(newSelected);
-};
-
-const handleCreateNewWatchlist = async () => {
-// Reset errors first
-setWatchlistNameError('');
-
-if (newWatchlistName.trim() && watchLists) {
-  // Check if watchlist with this name already exists
-  if (wlKeys.includes(newWatchlistName.trim())) {
-    setWatchlistNameError('A watchlist with this name already exists. Please try another name.');
-    return;
-  }
-
-  // Validate watchlist name characters
-  const validation = validateWatchlistName(newWatchlistName.trim());
-  if (!validation.valid) {
-    setWatchlistNameError(validation.message);
-    return;
-  }
-
-  try {
-    const userID: string = await getUserID();
-    const name = await WatchlistApiService.createWatchlist({
-      watchlistName: newWatchlistName.trim(),
-      tickers: [],
-      userID
-    });
-
-    if (!name) {
-      throw Error('Watchlist Id is empty after creating');
+    if (!cleanedPrice) {
+      setAlertError('Price required');
+      return false;
     }
 
-    watchLists[newWatchlistName.trim()] = [];
-    refreshWatchlist(watchLists);
-    setWlKey(newWatchlistName.trim());
-    setCreateWatchlistOpen(false);
-    setNewWatchlistName('');
-  } catch (error) {
-    throwError(error);
-  }
-}
-};
+    // More permissive pattern for validation on blur/submit
+    // This allows valid currency formats like 1, 1.5, 10.99
+    if (!/^[0-9]+(\.[0-9]{0,2})?$/.test(cleanedPrice)) {
+setAlertError('Enter a valid price (e.g., 10.99)');
+     return false;
+   }
 
-const handleCloseDeleteWatchlistDialog = (name?: string) => {
-if (name && watchLists) {
-  try {
-    // Use the exact name as is - special characters shouldn't be a problem for object keys
-    delete watchLists[name];
+   const numValue = parseFloat(cleanedPrice);
+   if (numValue <= 0) {
+     setAlertError('Price must be greater than 0');
+     return false;
+   }
 
-    // Get remaining keys
-    const remainingKeys = Object.keys(watchLists);
+   // Clear error if valid
+   setAlertError('');
+   return true;
+ };
 
-    // Update the watchlists state
-    refreshWatchlist({ ...watchLists });
+ // Helper functions for sorting
+ function getComparator(
+   order: Order,
+   orderBy: keyof WatchlistTicker
+ ): (a: WatchlistTicker, b: WatchlistTicker) => number {
+   return order === 'desc'
+     ? (a, b) => descendingComparator(a, b, orderBy)
+     : (a, b) => -descendingComparator(a, b, orderBy);
+ }
 
-    // Select another watchlist if available
-    setWlKey(remainingKeys.length > 0 ? remainingKeys[0] : '');
+ function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
+   const valA = a[orderBy];
+   const valB = b[orderBy];
 
-    // Also ensure that the backend is updated
-    WatchlistApiService.deleteWatchlist(name).catch((error) => {
-      console.error('Error deleting watchlist from server:', error);
-    });
-  } catch (error) {
-    console.error('Error deleting watchlist:', error);
-    // Optionally show an error message to the user
-  }
-}
-setDeleteWatchlistDialog(false);
-};
+   // Handle undefined safely
+   if (valA == null && valB == null) return 0;
+   if (valA == null) return 1;
+   if (valB == null) return -1;
 
-const handleClickAddStock = () => {
-setSearchReady(true);
-setAddStockDialog(true);
-};
+   if (valB < valA) return -1;
+   if (valB > valA) return 1;
+   return 0;
+ }
 
-// Update the handle close method for the AddStockDialog
-const handleCloseAddStockDialog = () => {
-setAddStockDialog(false);
-// Reset states after dialog closes
-setAddStockSymbol('');
-setSearchReady(false);
-};
+ // Handle sort order change
+ const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof WatchlistTicker) => {
+   const isAsc = orderBy === property && order === 'asc';
+   setOrder(isAsc ? 'desc' : 'asc');
+   setOrderBy(property);
 
-const handleDeleteStocks = async () => {
-try {
-  // Optimistically update UI first
-  const tickers = watchLists[wlKey].filter((ticker) => !selected.includes(ticker.symbol));
-  watchLists[wlKey] = tickers;
-  refreshWatchlist({ ...watchLists });
+   // Force resort with new order
+   if (watchLists[wlKey]) {
+     let tickers = [...watchLists[wlKey]];
+     const newOrder = isAsc ? 'desc' : 'asc';
+     tickers.sort(getComparator(newOrder, property));
 
-  let newAlertData = { ...alertData };
-  for (const symbol of selected) {
-    delete newAlertData[symbol];
-  }
-  setAlertData(newAlertData);
+     // Apply current filter
+     if (filterMode === 'gainers') {
+       tickers = tickers.filter((ticker) => (ticker.changesPercentage || 0) > 0);
+     } else if (filterMode === 'losers') {
+       tickers = tickers.filter((ticker) => (ticker.changesPercentage || 0) < 0);
+     }
 
-  let newAlertErrors = { ...alertErrors };
-  for (const symbol of selected) {
-    delete newAlertErrors[symbol];
-  }
-  setAlertErrors(newAlertErrors);
+     setVisibleTickers(tickers);
+   }
+ };
 
-  const selectedCopy = [...selected]; // Save a copy before clearing
-  setSelected([]);
+ const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+   if (event.target.checked && visibleTickers.length > 0) {
+     const newSelected = visibleTickers.map((n) => n.symbol);
+     setSelected(newSelected);
+     return;
+   }
+   setSelected([]);
+ };
 
-  // Then perform the server request in the background
-  await WatchlistApiService.deleteStocksInWatchlist(wlKey, selectedCopy);
-} catch (error) {
-  console.error('Error deleting stocks:', error);
-  // In a real app, you might want to show an error toast here
-}
-};
+ const handleSelectStock = (event: React.MouseEvent<unknown>, symbol: string) => {
+   const selectedIndex = selected.indexOf(symbol);
+   let newSelected: string[] = [];
 
-// Enter edit mode and initialize editing values for all selected stocks
-const handleEnterEditMode = () => {
-setEditMode(true);
+   if (selectedIndex === -1) {
+     newSelected = newSelected.concat(selected, symbol);
+   } else if (selectedIndex === 0) {
+     newSelected = newSelected.concat(selected.slice(1));
+   } else if (selectedIndex === selected.length - 1) {
+     newSelected = newSelected.concat(selected.slice(0, -1));
+   } else if (selectedIndex > 0) {
+     newSelected = newSelected.concat(selected.slice(0, selectedIndex), selected.slice(selectedIndex + 1));
+   }
+   setSelected(newSelected);
+ };
 
-const initialValues: { [key: string]: string } = {};
-selected.forEach((symbol) => {
-  const ticker = watchLists[wlKey].find((t) => t.symbol === symbol);
-  if (ticker) {
-    initialValues[symbol] = ticker.alertPrice != null ? String(ticker.alertPrice.toFixed(2)) : '';
-  }
-});
-setEditingValues(initialValues);
-};
+ const handleCreateNewWatchlist = async () => {
+   // Reset errors first
+   setWatchlistNameError('');
 
-const handleEditStocks = async () => {
-if (editMode) {
-  // Save changes
-  // Validate all selected alert prices before submitting
-  let hasError = false;
+   if (newWatchlistName.trim() && watchLists) {
+     // Check if watchlist with this name already exists
+     if (wlKeys.includes(newWatchlistName.trim())) {
+       setWatchlistNameError('A watchlist with this name already exists. Please try another name.');
+       return;
+     }
 
-  for (const symbol of selected) {
-    const priceValue = editingValues[symbol] || String(alertData[symbol] || '');
-    const isValid = validateAlertPrice(priceValue, symbol);
-    if (!isValid) {
-      hasError = true;
-    }
-  }
+     // Validate watchlist name characters
+     const validation = validateWatchlistName(newWatchlistName.trim());
+     if (!validation.valid) {
+       setWatchlistNameError(validation.message);
+       return;
+     }
 
-  if (hasError) {
-    return; // Don't proceed if there are validation errors
-  }
+     try {
+       const userID: string = await getUserID();
+       const name = await WatchlistApiService.createWatchlist({
+         watchlistName: newWatchlistName.trim(),
+         tickers: [],
+         userID
+       });
 
-  try {
-    // Convert editing values to numbers for the API call
-    const tickers: MinimalWatchlistTicker[] = selected.map((symbol) => {
-      const price =
-        editingValues[symbol] !== undefined && editingValues[symbol] !== ''
-          ? parseFloat(editingValues[symbol])
-          : alertData[symbol];
+       if (!name) {
+         throw Error('Watchlist Id is empty after creating');
+       }
 
-      return {
-        symbol,
-        alertPrice: price
-      };
-    });
+       watchLists[newWatchlistName.trim()] = [];
+       refreshWatchlist(watchLists);
+       setWlKey(newWatchlistName.trim());
+       setCreateWatchlistOpen(false);
+       setNewWatchlistName('');
+     } catch (error) {
+       throwError(error);
+     }
+   }
+ };
 
-    await WatchlistApiService.editStockAlertPrices(tickers, wlKey);
+ const handleCloseDeleteWatchlistDialog = (name?: string) => {
+   if (name && watchLists) {
+     try {
+       // Use the exact name as is - special characters shouldn't be a problem for object keys
+       delete watchLists[name];
 
-    // Refresh watchlist data
-    const updatedWatchlist = await WatchlistApiService.fetchWatchlist(wlKey);
-    if (updatedWatchlist) {
-      watchLists[wlKey] = updatedWatchlist.tickers;
-      refreshWatchlist({ ...watchLists });
-    }
+       // Get remaining keys
+       const remainingKeys = Object.keys(watchLists);
 
-    // Exit edit mode and clear editing values
-    setEditMode(false);
-    setEditingValues({});
-  } catch (error) {
-    throwError(error);
-  }
-} else {
-  // Enter edit mode
-  handleEnterEditMode();
-}
-};
+       // Update the watchlists state
+       refreshWatchlist({ ...watchLists });
 
-const handleWatchlistChange = (event: React.SyntheticEvent, newValue: string) => {
-setWlKey(newValue);
-};
+       // Select another watchlist if available
+       setWlKey(remainingKeys.length > 0 ? remainingKeys[0] : '');
 
-// Handler for view mode changes with new timeframe options
-const handleViewModeChange = (event: React.MouseEvent<HTMLElement>, newMode: ViewMode | null) => {
-if (newMode !== null) {
-  setViewMode(newMode);
+       // Also ensure that the backend is updated
+       WatchlistApiService.deleteWatchlist(name).catch((error) => {
+         console.error('Error deleting watchlist from server:', error);
+       });
+     } catch (error) {
+       console.error('Error deleting watchlist:', error);
+       // Optionally show an error message to the user
+     }
+   }
+   setDeleteWatchlistDialog(false);
+ };
 
-  // Update timeframe if a timeframe-specific view is selected
-  if (['90d', '180d', '1y', '3y', '5y'].includes(newMode)) {
-    setTimeframeMode(newMode as TimeframeMode);
-  }
-}
-};
+ const handleClickAddStock = () => {
+   setSearchReady(true);
+   setAddStockDialog(true);
+ };
 
-// Format percentage value with trend icon
-const renderPercentage = (value: number | null) => {
-// Handle null or undefined values
-if (value === null || value === undefined) {
-  return (
-    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
-      <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
-      0.00%
-    </Box>
-  );
-}
+ // Update the handle close method for the AddStockDialog
+ const handleCloseAddStockDialog = () => {
+   setAddStockDialog(false);
+   // Reset states after dialog closes
+   setAddStockSymbol('');
+   setSearchReady(false);
+ };
 
-const isPositive = value >= 0;
-return (
-  <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
-    {isPositive ? (
-      <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
-    ) : (
-      <TrendingDownIcon fontSize="small" sx={{ mr: 0.5 }} />
-    )}
-    {Math.abs(value).toFixed(2)}%
-  </Box>
-);
-};
+ const handleDeleteStocks = async () => {
+   try {
+     // Optimistically update UI first
+     const tickers = watchLists[wlKey].filter((ticker) => !selected.includes(ticker.symbol));
+     watchLists[wlKey] = tickers;
+     refreshWatchlist({ ...watchLists });
 
-// Helper to get the display label for timeframe mode
-const getTimeframeLabel = (mode: TimeframeMode): string => {
-switch (mode) {
-  case '90d': return '90 Days';
-  case '180d': return '180 Days';
-  case '1y': return '1 Year';
-  case '3y': return '3 Years';
-  case '5y': return '5 Years';
-  default: return '1 Year';
-}
-};
+     let newAlertData = { ...alertData };
+     for (const symbol of selected) {
+       delete newAlertData[symbol];
+     }
+     setAlertData(newAlertData);
 
-// Helper to get the appropriate high/low values based on timeframe
-const getTimeframeHighValue = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
-switch (timeframe) {
-  case '90d': return ticker.ninetyDayHigh || null;
-  case '180d': return ticker.oneEightyDayHigh || null;
-  case '1y': return ticker.yearHigh || null;
-  case '3y': return ticker.threeYearHigh || null;
-  case '5y': return ticker.fiveYearHigh || null;
-  default: return ticker.yearHigh || null;
-}
-};
+     const selectedCopy = [...selected]; // Save a copy before clearing
+     setSelected([]);
 
-const getTimeframeLowValue = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
-switch (timeframe) {
-  case '90d': return ticker.ninetyDayLow || null;
-  case '180d': return ticker.oneEightyDayLow || null;
-  case '1y': return ticker.yearLow || null;
-  case '3y': return ticker.threeYearLow || null;
-  case '5y': return ticker.fiveYearLow || null;
-  default: return ticker.yearLow || null;
-}
-};
+     // Then perform the server request in the background
+     await WatchlistApiService.deleteStocksInWatchlist(wlKey, selectedCopy);
+   } catch (error) {
+     console.error('Error deleting stocks:', error);
+     // In a real app, you might want to show an error toast here
+   }
+ };
 
-// Calculate percentage off high/low for selected timeframe
-const getTimeframeHighPercentage = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
-const high = getTimeframeHighValue(ticker, timeframe);
-if (high === null || ticker.price === null) return null;
-return ((high - ticker.price) / high) * 100;
-};
+ // Handle individual alert price editing
+ const handleAlertPriceClick = (symbol: string, currentPrice: number | null) => {
+   setEditingSymbol(symbol);
+   setEditingValue(currentPrice != null ? currentPrice.toFixed(2) : '');
+   setAlertError('');
+ };
 
-const getTimeframeLowPercentage = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
-const low = getTimeframeLowValue(ticker, timeframe);
-if (low === null || ticker.price === null) return null;
-return ((ticker.price - low) / low) * 100;
-};
+ const handleAlertPriceSave = async (symbol: string) => {
+   if (!validateAlertPrice(editingValue, symbol)) {
+     return;
+   }
 
-// Calculate dollar deviation from alert price
-const getAlertPriceDeviation = (ticker: WatchlistTicker): number | null => {
-if (ticker.price === null || ticker.alertPrice === null) return null;
-return ticker.price - ticker.alertPrice;
-};
+   try {
+     const ticker: MinimalWatchlistTicker = {
+       symbol,
+       alertPrice: parseFloat(editingValue)
+     };
 
-// Define columns based on view mode with enhanced timeframe support
-const getColumnsForView = (mode: ViewMode) => {
-// Core columns that appear in all views
-const coreColumns = [
-  { id: 'symbol', label: 'Symbol', align: 'left' },
-  { id: 'alertPrice', label: 'Alert Price', align: 'right' },
-  { id: 'price', label: 'Current Price', align: 'right' },
-  {
-    id: 'alertPriceDeviationPercent',
-    label: 'Alert Deviation %',
-    align: 'right',
-    tooltip: 'Percentage difference between current price and alert price: ((Current Price - Alert Price) / Alert Price) * 100%'
-  }
-];
+     await WatchlistApiService.editStockAlertPrices([ticker], wlKey);
 
-// Timeframe-specific views (90d, 180d, 1y, 3y, 5y)
-if (['90d', '180d', '1y', '3y', '5y'].includes(mode)) {
-  return [
-    ...coreColumns,
-    {
-      id: `${mode}High`,
-      label: `${getTimeframeLabel(mode as TimeframeMode)} High`,
-      align: 'right',
-      timeframe: mode as TimeframeMode
-    },
-    {
-      id: `${mode}HighVsCurrentPercentage`,
-      label: `Off ${getTimeframeLabel(mode as TimeframeMode)} High %`,
-      align: 'right',
-      tooltip: `Percentage difference between current price and ${getTimeframeLabel(mode as TimeframeMode)} high`,
-      timeframe: mode as TimeframeMode
-    },
-    {
-      id: `${mode}Low`,
-      label: `${getTimeframeLabel(mode as TimeframeMode)} Low`,
-      align: 'right',
-      timeframe: mode as TimeframeMode
-    },
-    {
-      id: `${mode}LowVsCurrentPercentage`,
-      label: `Off ${getTimeframeLabel(mode as TimeframeMode)} Low %`,
-      align: 'right',
-      tooltip: `Percentage difference between current price and ${getTimeframeLabel(mode as TimeframeMode)} low`,
-      timeframe: mode as TimeframeMode
-    }
-  ];
-}
+     // Refresh watchlist data
+     const updatedWatchlist = await WatchlistApiService.fetchWatchlist(wlKey);
+     if (updatedWatchlist) {
+       watchLists[wlKey] = updatedWatchlist.tickers;
+       refreshWatchlist({ ...watchLists });
+     }
 
-// Original view modes (full, high, low)
-if (mode === 'full') {
-  return [
-    ...coreColumns,
-    { id: 'yearHigh', label: 'Year High', align: 'right' },
-    {
-      id: 'yearHighVsCurrentPercentage',
-      label: 'Off 1Y High %',
-      align: 'right',
-      tooltip: 'Percentage difference between current price and year high: ((Year High - Current Price) / Year High) * 100%'
-    },
-    { id: 'fiveYearHigh', label: '5 Year High', align: 'right' },
-    {
-      id: 'fiveYearHighVsCurrentPercentage',
-      label: 'Off 5Y High %',
-      align: 'right',
-      tooltip: 'Percentage difference between current price and 5-year high: ((5Y High - Current Price) / 5Y High) * 100%'
-    },
-    { id: 'yearLow', label: 'Year Low', align: 'right' },
-    {
-      id: 'yearLowVsCurrentPercentage',
-      label: 'Off 1Y Low %',
-      align: 'right',
-      tooltip: 'Percentage difference between current price and year low: ((Current Price - Year Low) / Year Low) * 100%'
-    },
-    { id: 'fiveYearLow', label: '5 Year Low', align: 'right' },
-    {
-      id: 'fiveYearLowVsCurrentPercentage',
-      label: 'Off 5Y Low %',
-      align: 'right',
-      tooltip: 'Percentage difference between current price and 5-year low: ((Current Price - 5Y Low) / 5Y Low) * 100%'
-    }
-  ];
-} else if (mode === 'high') {
-  return [
-    ...coreColumns,
-    { id: 'yearHigh', label: 'Year High', align: 'right' },
-    {
-      id: 'yearHighVsCurrentPercentage',
-      label: 'Off 1Y High %',
-      align: 'right',
-      tooltip: 'Percentage difference between current price and year high: ((Year High - Current Price) / Year High) * 100%'
-    },
-    { id: 'fiveYearHigh', label: '5 Year High', align: 'right' },
-    {
-      id: 'fiveYearHighVsCurrentPercentage',
-      label: 'Off 5Y High %',
-      align: 'right',
-      tooltip: 'Percentage difference between current price and 5-year high: ((5Y High - Current Price) / 5Y High) * 100%'
-    }
-  ];
-} else {
-  // low mode
-  return [
-    ...coreColumns,
-    { id: 'yearLow', label: 'Year Low', align: 'right' },
-    {
-      id: 'yearLowVsCurrentPercentage',
-      label: 'Off 1Y Low %',
-      align: 'right',
-      tooltip: 'Percentage difference between current price and year low: ((Current Price - Year Low) / Year Low) * 100%'
-    },
-    { id: 'fiveYearLow', label: '5 Year Low', align: 'right' },
-    {
-      id: 'fiveYearLowVsCurrentPercentage',
-      label: 'Off 5Y Low %',
-      align: 'right',
-      tooltip: 'Percentage difference between current price and 5-year low: ((Current Price - 5Y Low) / 5Y Low) * 100%'
-    }
-  ];
-}
-};
+     // Exit edit mode
+     setEditingSymbol(null);
+     setEditingValue('');
+     setAlertError('');
+   } catch (error) {
+     throwError(error);
+   }
+ };
 
-// Render table rows with stock data
-const renderTable = () => {
-if (!wlKey) {
-  return (
-    <TableRow>
-      <TableCell colSpan={12} align="center">
-        <Typography sx={{ py: 3, color: 'var(--secondary-blue)' }}>
-          Select or create a watchlist to get started.
-        </Typography>
-      </TableCell>
-    </TableRow>
-  );
-}
+ const handleAlertPriceCancel = () => {
+   setEditingSymbol(null);
+   setEditingValue('');
+   setAlertError('');
+ };
 
-if (visibleTickers.length === 0) {
-  // Show different messages based on filter mode
-  let message = 'No stocks in this watchlist. Use the search bar above to add stocks.';
+ const handleWatchlistChange = (event: React.SyntheticEvent, newValue: string) => {
+   setWlKey(newValue);
+ };
 
-  if (filterMode === 'gainers' && watchLists[wlKey]?.length > 0) {
-    message = 'No gaining stocks found. Try changing the filter to see all stocks.';
-  } else if (filterMode === 'losers' && watchLists[wlKey]?.length > 0) {
-    message = 'No losing stocks found. Try changing the filter to see all stocks.';
-  }
+ // Handler for view mode changes with new timeframe options
+ const handleViewModeChange = (event: React.MouseEvent<HTMLElement>, newMode: ViewMode | null) => {
+   if (newMode !== null) {
+     setViewMode(newMode);
 
-  return (
-    <TableRow>
-      <TableCell colSpan={12} align="center">
-        <Typography sx={{ py: 3, color: 'var(--secondary-blue)' }}>{message}</Typography>
-      </TableCell>
-    </TableRow>
-  );
-}
+     // Update timeframe if a timeframe-specific view is selected
+     if (['90d', '180d', '1y', '3y', '5y'].includes(newMode)) {
+       setTimeframeMode(newMode as TimeframeMode);
+     }
+   }
+ };
 
-return visibleTickers.map((row, index) => {
-  const isItemSelected = isSelected(row.symbol);
-  const labelId = `enhanced-table-checkbox-${index}`;
+ // Format percentage value with trend icon
+ const renderPercentage = (value: number | null) => {
+   // Handle null or undefined values
+   if (value === null || value === undefined) {
+     return (
+       <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+         <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
+         0.00%
+       </Box>
+     );
+   }
 
-  return (
-    <TableRow
-      hover
-      onClick={(event) => handleSelectStock(event, row.symbol)}
-      role="checkbox"
-      aria-checked={isItemSelected}
-      tabIndex={-1}
-      key={row.symbol}
-      id={`row-${row.symbol}`}
-      selected={isItemSelected}
-      sx={{
-        cursor: 'pointer',
-        backgroundColor: highlightedSymbol === row.symbol ? 'rgba(214, 209, 209, 0.8)' : 'inherit',
-        transition: 'background-color 0.5s ease',
-        '&:hover': { backgroundColor: 'var(--background-light)' }
-      }}
-    >
-      <TableCell padding="checkbox">
-        <Checkbox color="primary" checked={isItemSelected} inputProps={{ 'aria-labelledby': labelId }} />
-      </TableCell>
+   const isPositive = value >= 0;
+   return (
+     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+       {isPositive ? (
+         <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
+       ) : (
+         <TrendingDownIcon fontSize="small" sx={{ mr: 0.5 }} />
+       )}
+       {Math.abs(value).toFixed(2)}%
+     </Box>
+   );
+ };
 
-      <TableCell align="center" padding="none">
-        {row.alertPrice != null ? (
-          <Tooltip title="Alert price set">
-            <NotificationsIcon
-              sx={{
-                color: 'white',
-                backgroundColor: 'var(--primary-blue)',
-                borderRadius: '50%',
-                padding: '4px',
-                fontSize: '20px'
-              }}
-            />
-          </Tooltip>
-        ) : (
-          <Tooltip title="No alert price">
-            <NotificationsNoneIcon
-              sx={{
-                color: 'var(--primary-blue)',
-                fontSize: '20px'
-              }}
-            />
-          </Tooltip>
-        )}
-      </TableCell>
+ // Helper to get the display label for timeframe mode
+ const getTimeframeLabel = (mode: TimeframeMode): string => {
+   switch (mode) {
+     case '90d': return '90-Day';
+     case '180d': return '180-Day';
+     case '1y': return '1-Year';
+     case '3y': return '3-Year';
+     case '5y': return '5-Year';
+     default: return '1-Year';
+   }
+ };
 
-      {/* Symbol with hover details */}
-      <TableCell>
-        <Tooltip
-          title={<StockDetailsTooltip row={row} />}
-          arrow
-          placement="right-start"
-          PopperProps={{
-            sx: {
-              '& .MuiTooltip-tooltip': {
-                backgroundColor: 'white',
-                color: 'inherit',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                p: 0
-              }
-            }
-          }}
-        >
-          <Box
-            component="a"
-            href={`#/quote?symbol=${row.symbol}`}
-            sx={{
-              color: 'var(--primary-blue)',
-              fontWeight: 600,
-              textDecoration: 'none',
-              '&:hover': {
-                textDecoration: 'underline'
-              }
-            }}
-          >
-            {row.symbol}
-          </Box>
-        </Tooltip>
-      </TableCell>
+ // Helper to get the appropriate high/low values based on timeframe
+ const getTimeframeHighValue = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
+   switch (timeframe) {
+     case '90d': return ticker.ninetyDayHigh || null;
+     case '180d': return ticker.oneEightyDayHigh || null;
+     case '1y': return ticker.yearHigh || null;
+     case '3y': return ticker.threeYearHigh || null;
+     case '5y': return ticker.fiveYearHigh || null;
+     default: return ticker.yearHigh || null;
+   }
+ };
 
-      {/* Alert Price */}
-      <TableCell align="right">
-        {editMode && isItemSelected ? (
-          <TextField
-            value={editingValues[row.symbol] || ''}
-            error={!!alertErrors[row.symbol]}
-            helperText={alertErrors[row.symbol]}
-            size="small"
-            type="text"
-            variant="outlined"
-            autoFocus={selected.length === 1}
-            InputProps={{
-              sx: {
-                height: '32px',
-                width: '100px',
-                fontWeight: 500,
-                '& input': { textAlign: 'right' }
-              }
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (
-                editingValues[row.symbol] === String(row.alertPrice != null ? row.alertPrice.toFixed(2) : '0.00') ||
-                editingValues[row.symbol] === undefined
-              ) {
-                setEditingValues({
-                  ...editingValues,
-                  [row.symbol]: ''
-                });
-              }
-            }}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === '' || /^[0-9]*\.?[0-9]*$/.test(value)) {
-                setEditingValues({
-                  ...editingValues,
-                  [row.symbol]: value
-                });
-              }
-            }}
-            onBlur={(e) => {
-              if (editingValues[row.symbol] === '') {
-                setEditingValues({
-                  ...editingValues,
-                  [row.symbol]: String(row.alertPrice != null ? row.alertPrice.toFixed(2) : '0.00')
-                });
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                handleEditStocks();
-              } else if (e.key === 'Escape') {
-                setEditMode(false);
-                setEditingValues({});
-              }
-            }}
-          />
-        ) : (
-          <Box
-            sx={{
-              display: 'inline-block',
-              minWidth: '80px',
-              p: '4px 8px',
-              borderRadius: '4px',
-              color: row.alertPrice == null ? 'var(--secondary-blue)' : 'inherit',
-              fontStyle: 'normal',
-              cursor: row.alertPrice == null ? 'pointer' : 'default',
-              textAlign: 'center'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!editMode && row.alertPrice == null) {
-                setSelected([row.symbol]);
-                handleEnterEditMode();
-              }
-            }}
-          >
-            {row.alertPrice != null ? (
-              `$${row.alertPrice.toFixed(2)}`
-            ) : (
-              <>
-                No price set
-                <br />
-                <span style={{ fontWeight: 500 }}>click to add</span>
-              </>
-            )}
-          </Box>
-        )}
-      </TableCell>
+ const getTimeframeLowValue = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
+   switch (timeframe) {
+     case '90d': return ticker.ninetyDayLow || null;
+     case '180d': return ticker.oneEightyDayLow || null;
+     case '1y': return ticker.yearLow || null;
+     case '3y': return ticker.threeYearLow || null;
+     case '5y': return ticker.fiveYearLow || null;
+     default: return ticker.yearLow || null;
+   }
+ };
 
-      {/* Current Price */}
-      <TableCell align="right" sx={{ fontWeight: 600 }}>
-        ${row.price != null ? row.price.toFixed(2) : '0.00'}
-      </TableCell>
+ // Calculate percentage off high/low for selected timeframe
+ const getTimeframeHighPercentage = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
+   const high = getTimeframeHighValue(ticker, timeframe);
+   if (high === null || ticker.price === null) return null;
+   return ((high - ticker.price) / high) * 100;
+ };
 
-      {/* Alert Price Deviation Percentage */}
-      <TableCell
-        align="right"
-        sx={{
-          color: (getAlertPriceDeviationPercent(row) || 0) >= 0 ? 'green' : 'red',
-          fontWeight: 500,
-          borderRight: '1px solid black'
-        }}
-      >
-        {getAlertPriceDeviationPercent(row) !== null
-          ? (getAlertPriceDeviationPercent(row)! >= 0 ? '+' : '') +
-            getAlertPriceDeviationPercent(row)!.toFixed(2) +
-            '%'
-          : '0.00%'}
-      </TableCell>
+ const getTimeframeLowPercentage = (ticker: WatchlistTicker, timeframe: TimeframeMode): number | null => {
+   const low = getTimeframeLowValue(ticker, timeframe);
+   if (low === null || ticker.price === null) return null;
+   return ((ticker.price - low) / low) * 100;
+ };
 
-      {/* Timeframe-specific columns */}
-      {['90d', '180d', '1y', '3y', '5y'].includes(viewMode) && (
-        <>
-          {/* High value for selected timeframe */}
-          <TableCell
-            align="right"
-            sx={{
-              backgroundColor: 'rgba(232, 244, 253, 0.6)',
-              borderRight: '1px solid rgba(0, 0, 0, 0.1)',
-              borderLeft: '1px solid black'
-            }}
-          >
-            $
-            {getTimeframeHighValue(row, viewMode as TimeframeMode) !== null
-              ? getTimeframeHighValue(row, viewMode as TimeframeMode)!.toFixed(2)
-              : '0.00'}
-          </TableCell>
+ // Calculate dollar deviation from alert price
+ const getAlertPriceDeviation = (ticker: WatchlistTicker): number | null => {
+   if (ticker.price === null || ticker.alertPrice === null) return null;
+   return ticker.price - ticker.alertPrice;
+ };
 
-          {/* High percentage for selected timeframe */}
-          <TableCell
-            align="right"
-            sx={{
-              color: (getTimeframeHighPercentage(row, viewMode as TimeframeMode) || 0) >= 0 ? 'green' : 'red',
-              fontWeight: 500,
-              backgroundColor: 'rgba(232, 244, 253, 0.6)',
-              borderRight: '1px solid black'
-            }}
-          >
-            {renderPercentage(getTimeframeHighPercentage(row, viewMode as TimeframeMode))}
-          </TableCell>
+ // Define columns based on view mode with enhanced timeframe support
+ const getColumnsForView = (mode: ViewMode) => {
+   // Core columns that appear in all views
+   const coreColumns = [
+     { id: 'symbol', label: 'Symbol', align: 'left' },
+     { id: 'alertPrice', label: 'Alert Price', align: 'right' },
+     { id: 'price', label: 'Current Price', align: 'right' },
+     {
+       id: 'alertPriceDeviationPercent',
+       label: 'Alert Deviation %',
+       align: 'right',
+       tooltip: 'Percentage difference between current price and alert price: ((Current Price - Alert Price) / Alert Price) * 100%'
+     }
+   ];
 
-          {/* Low value for selected timeframe */}
-          <TableCell
-            align="right"
-            sx={{
-              backgroundColor: 'rgba(253, 237, 232, 0.6)',
-              borderRight: '1px solid rgba(0, 0, 0, 0.1)',
-              borderLeft: '1px solid black'
-            }}
-          >
-            $
-            {getTimeframeLowValue(row, viewMode as TimeframeMode) !== null
-              ? getTimeframeLowValue(row, viewMode as TimeframeMode)!.toFixed(2)
-              : '0.00'}
-          </TableCell>
+   // Timeframe-specific views (90d, 180d, 1y, 3y, 5y)
+   if (['90d', '180d', '1y', '3y', '5y'].includes(mode)) {
+     return [
+       ...coreColumns,
+       {
+         id: `${mode}High`,
+         label: `${getTimeframeLabel(mode as TimeframeMode)} High`,
+         align: 'right',
+         timeframe: mode as TimeframeMode
+       },
+       {
+         id: `${mode}HighVsCurrentPercentage`,
+         label: `Off ${getTimeframeLabel(mode as TimeframeMode)} High %`,
+         align: 'right',
+         tooltip: `Percentage difference between current price and ${getTimeframeLabel(mode as TimeframeMode)} high`,
+         timeframe: mode as TimeframeMode
+       },
+       {
+         id: `${mode}Low`,
+         label: `${getTimeframeLabel(mode as TimeframeMode)} Low`,
+         align: 'right',
+         timeframe: mode as TimeframeMode
+       },
+       {
+         id: `${mode}LowVsCurrentPercentage`,
+         label: `Off ${getTimeframeLabel(mode as TimeframeMode)} Low %`,
+         align: 'right',
+         tooltip: `Percentage difference between current price and ${getTimeframeLabel(mode as TimeframeMode)} low`,
+         timeframe: mode as TimeframeMode
+       }
+     ];
+   }
 
-          {/* Low percentage for selected timeframe */}
-          <TableCell
-            align="right"
-            sx={{
-              color: (getTimeframeLowPercentage(row, viewMode as TimeframeMode) || 0) >= 0 ? 'green' : 'red',
-              fontWeight: 500,
-              backgroundColor: 'rgba(253, 237, 232, 0.6)',
-              borderRight: '1px solid black'
-            }}
-          >
-            {renderPercentage(getTimeframeLowPercentage(row, viewMode as TimeframeMode))}
-          </TableCell>
-        </>
-      )}
-      
-      {/* View-specific columns */}
-      {viewMode === 'full' && (
-        <>
-          {/* High metrics section */}
-          <TableCell
-            align="right"
-            sx={{
-              backgroundColor: 'rgba(232, 244, 253, 0.6)',
-              borderRight: '1px solid rgba(0, 0, 0, 0.1)',
-              borderLeft: '1px solid black'
-            }}
-          >
-            ${row.yearHigh != null ? row.yearHigh.toFixed(2) : '0.00'}
-          </TableCell>
-          <TableCell
+   // Original view modes (full, high, low)
+   if (mode === 'full') {
+     return [
+       ...coreColumns,
+       { id: 'yearHigh', label: '1-Year High', align: 'right' },
+       {
+         id: 'yearHighVsCurrentPercentage',
+         label: 'Off 1-Year High %',
+         align: 'right',
+         tooltip: 'Percentage difference between current price and year high: ((Year High - Current Price) / Year High) * 100%'
+       },
+       { id: 'fiveYearHigh', label: '5-Year High', align: 'right' },
+       {
+         id: 'fiveYearHighVsCurrentPercentage',
+         label: 'Off 5-Year High %',
+         align: 'right',
+         tooltip: 'Percentage difference between current price and 5-year high: ((5Y High - Current Price) / 5Y High) * 100%'
+       },
+       { id: 'yearLow', label: '1-Year Low', align: 'right' },
+       {
+         id: 'yearLowVsCurrentPercentage',
+         label: 'Off 1-Year Low %',
+         align: 'right',
+         tooltip: 'Percentage difference between current price and year low: ((Current Price - Year Low) / Year Low) * 100%'
+       },
+       { id: 'fiveYearLow', label: '5-Year Low', align: 'right' },
+       {
+         id: 'fiveYearLowVsCurrentPercentage',
+         label: 'Off 5-Year Low %',
+         align: 'right',
+         tooltip: 'Percentage difference between current price and 5-year low: ((Current Price - 5Y Low) / 5Y Low) * 100%'
+       }
+     ];
+   } else if (mode === 'high') {
+     return [
+       ...coreColumns,
+       { id: 'yearHigh', label: '1-Year High', align: 'right' },
+       {
+         id: 'yearHighVsCurrentPercentage',
+         label: 'Off 1-Year High %',
+         align: 'right',
+         tooltip: 'Percentage difference between current price and year high: ((Year High - Current Price) / Year High) * 100%'
+       },
+       { id: 'fiveYearHigh', label: '5-Year High', align: 'right' },
+       {
+         id: 'fiveYearHighVsCurrentPercentage',
+         label: 'Off 5-Year High %',
+         align: 'right',
+         tooltip: 'Percentage difference between current price and 5-year high: ((5Y High - Current Price) / 5Y High) * 100%'
+       }
+     ];
+   } else {
+     // low mode
+     return [
+       ...coreColumns,
+       { id: 'yearLow', label: '1-Year Low', align: 'right' },
+       {
+         id: 'yearLowVsCurrentPercentage',
+         label: 'Off 1-Year Low %',
+         align: 'right',
+         tooltip: 'Percentage difference between current price and year low: ((Current Price - Year Low) / Year Low) * 100%'
+       },
+       { id: 'fiveYearLow', label: '5-Year Low', align: 'right' },
+       {
+         id: 'fiveYearLowVsCurrentPercentage',
+         label: 'Off 5-Year Low %',
+         align: 'right',
+         tooltip: 'Percentage difference between current price and 5-year low: ((Current Price - 5Y Low) / 5Y Low) * 100%'
+       }
+     ];
+   }
+ };
+
+ // Render table rows with stock data
+ const renderTable = () => {
+   if (!wlKey) {
+     return (
+       <TableRow>
+         <TableCell colSpan={12} align="center">
+           <Typography sx={{ py: 3, color: 'var(--secondary-blue)' }}>
+             Select or create a watchlist to get started.
+           </Typography>
+         </TableCell>
+       </TableRow>
+     );
+   }
+
+   if (visibleTickers.length === 0) {
+     // Show different messages based on filter mode
+     let message = 'No stocks in this watchlist. Use the search bar above to add stocks.';
+
+     if (filterMode === 'gainers' && watchLists[wlKey]?.length > 0) {
+       message = 'No gaining stocks found. Try changing the filter to see all stocks.';
+     } else if (filterMode === 'losers' && watchLists[wlKey]?.length > 0) {
+       message = 'No losing stocks found. Try changing the filter to see all stocks.';
+     }
+
+     return (
+       <TableRow>
+         <TableCell colSpan={12} align="center">
+           <Typography sx={{ py: 3, color: 'var(--secondary-blue)' }}>{message}</Typography>
+         </TableCell>
+       </TableRow>
+     );
+   }
+
+   return visibleTickers.map((row, index) => {
+     const isItemSelected = isSelected(row.symbol);
+     const labelId = `enhanced-table-checkbox-${index}`;
+
+     return (
+       <TableRow
+         hover
+         onClick={(event) => handleSelectStock(event, row.symbol)}
+         role="checkbox"
+         aria-checked={isItemSelected}
+         tabIndex={-1}
+         key={row.symbol}
+         id={`row-${row.symbol}`}
+         selected={isItemSelected}
+         sx={{
+           cursor: 'pointer',
+           backgroundColor: highlightedSymbol === row.symbol ? 'rgba(214, 209, 209, 0.8)' : 'inherit',
+           transition: 'background-color 0.5s ease',
+           '&:hover': { backgroundColor: 'var(--background-light)' }
+         }}
+       >
+         <TableCell padding="checkbox">
+           <Checkbox color="primary" checked={isItemSelected} inputProps={{ 'aria-labelledby': labelId }} />
+         </TableCell>
+
+         <TableCell align="center" padding="none">
+           {row.alertPrice != null ? (
+             <Tooltip title="Alert price set">
+               <NotificationsIcon
+                 sx={{
+                   color: 'white',
+                   backgroundColor: 'var(--primary-blue)',
+                   borderRadius: '50%',
+                   padding: '4px',
+                   fontSize: '20px'
+                 }}
+               />
+             </Tooltip>
+           ) : (
+             <Tooltip title="No alert price">
+               <NotificationsNoneIcon
+                 sx={{
+                   color: 'var(--primary-blue)',
+                   fontSize: '20px'
+                 }}
+               />
+             </Tooltip>
+           )}
+         </TableCell>
+
+         {/* Symbol with hover details */}
+         <TableCell>
+           <Tooltip
+             title={<StockDetailsTooltip row={row} />}
+             arrow
+             placement="right-start"
+             PopperProps={{
+               sx: {
+                 '& .MuiTooltip-tooltip': {
+                   backgroundColor: 'white',
+                   color: 'inherit',
+                   boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                   p: 0
+                 }
+               }
+             }}
+           >
+             <Box
+               component="a"
+               href={`#/quote?symbol=${row.symbol}`}
+               sx={{
+                 color: 'var(--primary-blue)',
+                 fontWeight: 600,
+                 textDecoration: 'none',
+                 '&:hover': {
+                   textDecoration: 'underline'
+                 }
+               }}
+             >
+               {row.symbol}
+             </Box>
+           </Tooltip>
+         </TableCell>
+
+         {/* Alert Price */}
+         <TableCell align="right">
+           {editingSymbol === row.symbol ? (
+             <TextField
+               value={editingValue}
+               error={!!alertError}
+               helperText={alertError}
+               size="small"
+               type="text"
+               variant="outlined"
+               autoFocus
+               InputProps={{
+                 sx: {
+                   height: '32px',
+                   width: '100px',
+                   fontWeight: 500,
+                   '& input': { textAlign: 'right' }
+                 }
+               }}
+               onClick={(e) => {
+                 e.stopPropagation();
+               }}
+               onChange={(e) => {
+                 const value = e.target.value;
+                 if (value === '' || /^[0-9]*\.?[0-9]*$/.test(value)) {
+                   setEditingValue(value);
+                 }
+               }}
+               onBlur={() => {
+                 if (editingValue.trim() === '') {
+                   handleAlertPriceCancel();
+                 } else {
+                   handleAlertPriceSave(row.symbol);
+                 }
+               }}
+               onKeyDown={(e) => {
+                 if (e.key === 'Enter') {
+                   e.preventDefault();
+                   e.stopPropagation();
+                   handleAlertPriceSave(row.symbol);
+                 } else if (e.key === 'Escape') {
+                   handleAlertPriceCancel();
+                 }
+               }}
+             />
+           ) : (
+             <Box
+               sx={{
+                 display: 'inline-block',
+                 minWidth: '80px',
+                 p: '4px 8px',
+                 borderRadius: '4px',
+                 color: row.alertPrice == null ? 'var(--secondary-blue)' : 'inherit',
+                 fontStyle: 'normal',
+                 cursor: 'pointer',
+                 textAlign: 'center',
+                 '&:hover': {
+                   backgroundColor: 'var(--background-light)'
+                 }
+               }}
+               onClick={(e) => {
+                 e.stopPropagation();
+                 handleAlertPriceClick(row.symbol, row.alertPrice);
+               }}
+             >
+               {row.alertPrice != null ? (
+                 `$${row.alertPrice.toFixed(2)}`
+               ) : (
+                 <>
+                   No price set
+                   <br />
+                   <span style={{ fontWeight: 500 }}>click to add</span>
+                 </>
+               )}
+             </Box>
+           )}
+         </TableCell>
+
+         {/* Current Price */}
+         <TableCell align="right" sx={{ fontWeight: 600 }}>
+           ${row.price != null ? row.price.toFixed(2) : '0.00'}
+         </TableCell>
+
+         {/* Alert Price Deviation Percentage */}
+         <TableCell
+           align="right"
+           sx={{
+             color: (getAlertPriceDeviationPercent(row) || 0) >= 0 ? 'green' : 'red',
+             fontWeight: 500,
+             borderRight: '1px solid black'
+           }}
+         >
+           {getAlertPriceDeviationPercent(row) !== null
+             ? (getAlertPriceDeviationPercent(row)! >= 0 ? '+' : '') +
+               getAlertPriceDeviationPercent(row)!.toFixed(2) +
+               '%'
+             : '0.00%'}
+         </TableCell>
+
+         {/* Timeframe-specific columns */}
+         {['90d', '180d', '1y', '3y', '5y'].includes(viewMode) && (
+           <>
+             {/* High value for selected timeframe */}
+             <TableCell
+               align="right"
+               sx={{
+                 backgroundColor: 'rgba(232, 244, 253, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+                 borderLeft: '1px solid black'
+               }}
+             >
+               $
+               {getTimeframeHighValue(row, viewMode as TimeframeMode) !== null
+                 ? getTimeframeHighValue(row, viewMode as TimeframeMode)!.toFixed(2)
+                 : '0.00'}
+             </TableCell>
+
+             {/* High percentage for selected timeframe */}
+             <TableCell
+               align="right"
+               sx={{
+                 color: (getTimeframeHighPercentage(row, viewMode as TimeframeMode) || 0) >= 0 ? 'green' : 'red',
+                 fontWeight: 500,
+                 backgroundColor: 'rgba(232, 244, 253, 0.6)',
+                 borderRight: '1px solid black'
+               }}
+             >
+               {renderPercentage(getTimeframeHighPercentage(row, viewMode as TimeframeMode))}
+             </TableCell>
+
+             {/* Low value for selected timeframe */}
+             <TableCell
+               align="right"
+               sx={{
+                 backgroundColor: 'rgba(253, 237, 232, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+                 borderLeft: '1px solid black'
+               }}
+             >
+               $
+               {getTimeframeLowValue(row, viewMode as TimeframeMode) !== null
+                 ? getTimeframeLowValue(row, viewMode as TimeframeMode)!.toFixed(2)
+                 : '0.00'}
+             </TableCell>
+
+             {/* Low percentage for selected timeframe */}
+             <TableCell
+               align="right"
+               sx={{
+                 color: (getTimeframeLowPercentage(row, viewMode as TimeframeMode) || 0) >= 0 ? 'green' : 'red',
+                 fontWeight: 500,
+                 backgroundColor: 'rgba(253, 237, 232, 0.6)',
+                 borderRight: '1px solid black'
+               }}
+             >
+               {renderPercentage(getTimeframeLowPercentage(row, viewMode as TimeframeMode))}
+             </TableCell>
+           </>
+         )}
+         
+         {/* View-specific columns */}
+         {viewMode === 'full' && (
+           <>
+             {/* High metrics section */}
+             <TableCell
+               align="right"
+               sx={{
+                 backgroundColor: 'rgba(232, 244, 253, 0.6)',
+                 borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+                 borderLeft: '1px solid black'
+               }}
+             >
+               ${row.yearHigh != null ? row.yearHigh.toFixed(2) : '0.00'}
+             </TableCell>
+             <TableCell
                align="right"
                sx={{
                  color: (row.yearHighVsCurrentPercentage || 0) >= 0 ? 'green' : 'red',
@@ -2131,8 +2069,6 @@ return visibleTickers.map((row, index) => {
          <EnhancedTableToolbar
            numSelected={selected.length}
            handleDeleteStocks={handleDeleteStocks}
-           handleEditStocks={handleEditStocks}
-           editMode={editMode}
            filterMode={filterMode}
            handleFilterChange={handleFilterChange}
          />
