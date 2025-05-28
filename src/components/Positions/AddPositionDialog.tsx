@@ -52,6 +52,9 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
   const [priceError, setPriceError] = useState('');
   const [quantityError, setQuantityError] = useState('');
   const [dateError, setDateError] = useState('');
+  const [targetSellPrice, setTargetSellPrice] = useState('');
+  const [sellPriceError, setSellPriceError] = useState('');
+
 
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
@@ -76,6 +79,7 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
       fetchStockData(addStockSymbol);
     }
   }, [addStockSymbol]);
+
 
   const validatePrice = (price: string): boolean => {
     // First clean up the string (allow trailing decimal point for UX)
@@ -102,6 +106,24 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
     setPriceError('');
     return true;
   };
+  const validateSellPrice = (price: string): boolean => {
+  const cleaned = price.trim().endsWith('.') ? price.trim() + '0' : price.trim();
+  if (!cleaned) return true; // Optional field, allow empty
+
+  if (!/^[0-9]+(\.[0-9]{0,2})?$/.test(cleaned)) {
+    setSellPriceError('Enter a valid sell price (e.g., 25.00)');
+    return false;
+  }
+
+  const num = parseFloat(cleaned);
+  if (num <= 0) {
+    setSellPriceError('Sell price must be greater than 0');
+    return false;
+  }
+
+  setSellPriceError('');
+  return true;
+};
 
   const validateQuantity = (quantity: string): boolean => {
     const cleanedQuantity = quantity.trim();
@@ -169,16 +191,15 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
       const isPriceValid = validatePrice(addStockPrice);
       const isQuantityValid = validateQuantity(addStockQuantity);
       const isDateValid = validateDate(addStockDate);
-
-      if (!isPriceValid || !isQuantityValid || !isDateValid) {
-        return; // Don't proceed if validation fails
-      }
+      const isSellPriceValid = validateSellPrice(targetSellPrice);
+      if (!isPriceValid || !isQuantityValid || !isDateValid || !isSellPriceValid) return;
 
       if (!addStockSymbol) {
         throw new Error('Stock symbol cannot be empty');
       }
 
       // Store date as standard Date object
+      console.log('Adding symbol:', addStockSymbol);
       const purchaseDate = addStockDate ? new Date(addStockDate) : null;
 
       const tickers = {
@@ -190,7 +211,8 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
         priceChange: 0,
         gainOrLoss: 0,
         marketValue: 0,
-        exchange: stockInfo?.exchange || ''
+        exchange: stockInfo?.exchange || '',
+        targetSellPrice: targetSellPrice ? Number(targetSellPrice) : null
       };
 
       const searchResult = await StockApiService.fetchDetailedStock(tickers.symbol);
@@ -379,6 +401,43 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
             }}
           />
         </Box>
+        <Box sx={{ mb: 3 }}>
+  <Typography variant="body1" sx={{ mb: 1, fontWeight: 500, color: 'var(--primary-blue)' }}>
+    Target sell price (optional)
+  </Typography>
+
+  <TextField
+    error={!!sellPriceError}
+    helperText={sellPriceError}
+    fullWidth
+    id="target-sell-price"
+    label="Target sell price"
+    type="text"
+    variant="outlined"
+    value={targetSellPrice}
+    onChange={(e) => {
+      const val = e.target.value;
+      if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
+        setTargetSellPrice(val);
+      }
+    }}
+    onBlur={() => validateSellPrice(targetSellPrice)}
+    InputProps={{
+      startAdornment: <InputAdornment position="start">$</InputAdornment>
+    }}
+    sx={{
+      '& .MuiOutlinedInput-root': {
+        '&.Mui-focused fieldset': {
+          borderColor: 'var(--primary-blue)'
+        }
+      },
+      '& .MuiInputLabel-root.Mui-focused': {
+        color: 'var(--primary-blue)'
+      }
+    }}
+  />
+</Box>
+
 
         {/* Purchase Date */}
         <Box>

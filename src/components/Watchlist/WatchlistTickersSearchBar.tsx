@@ -84,7 +84,8 @@ const WatchlistTickersSearchBar: React.FC<WatchlistSearchBarProps> = ({
     if (!value) {
       return;
     }
-    setAddStockSymbol(value.symbol);
+    setAddStockSymbol(value.symbol.replace(/\d+$/, ''));
+
     setInputSearch(''); // Clear input immediately
     setSearchOptions([]); // Clear search options to close dropdown
 

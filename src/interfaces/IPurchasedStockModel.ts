@@ -13,6 +13,7 @@ export interface Ticker {
   priceChange: number;
   gainOrLoss: number;
   marketValue: number;
+  targetSellPrice: number | null;
 }
 export type PositionMap = { [key: string]: Ticker[] };
 
