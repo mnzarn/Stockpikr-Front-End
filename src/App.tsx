@@ -1,5 +1,6 @@
 import { HashRouter as Router } from 'react-router-dom';
 import './App.css';
+import { ApiLimitProvider } from './components/ApiLimitContext';
 import ErrorBoundary from './components/GlobalErrorBoundary';
 import NavigationHeader from './components/NavigationBar/NavigationBar';
 import DailyPopup from "./components/Notifications/DailyPopup";
@@ -10,13 +11,15 @@ function App() {
   return (
     <ErrorBoundary>
       <NotificationProvider>
-        <Router basename="/">
-          <div className="App">
-            <NavigationHeader />
-            <DailyPopup />
-            {routes()}
-          </div>
-        </Router>
+        <ApiLimitProvider>
+          <Router basename="/">
+            <div className="App">
+              <NavigationHeader />
+              <DailyPopup />
+              {routes()}
+            </div>
+          </Router>
+        </ApiLimitProvider>
       </NotificationProvider>
     </ErrorBoundary>
   );
