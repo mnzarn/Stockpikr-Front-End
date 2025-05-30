@@ -799,6 +799,11 @@ export default function Watchlist() {
       // Wait for the tickers to be rendered before highlighting
       const timeout = setTimeout(() => {
         setHighlightedSymbol(highlightFromQuery);
+
+      const rowElement = document.getElementById(`row-${highlightFromQuery}`);
+      if (rowElement) {
+        rowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
   
         // Remove highlight after 3s
         setTimeout(() => setHighlightedSymbol(null), 3000);
