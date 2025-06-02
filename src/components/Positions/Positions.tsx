@@ -533,9 +533,9 @@ const keys = Object.keys(updated);
 
           <Box display="inline-flex" alignItems="center">
             <WatchlistTickersSearchBar
-              setAddStockSymbol={setAddStockSymbol}
-              onSelectStock={() => {
-                if (addStockSymbol && positionKey) {
+              setAddStockSymbol={(symbol) => {
+                setAddStockSymbol(symbol);
+                if (symbol) {
                   setAddStockDialog(true);
                 }
               }}
