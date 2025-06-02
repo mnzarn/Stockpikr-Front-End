@@ -1102,7 +1102,6 @@ export default function Watchlist() {
       if (updatedWatchlist) {
         watchLists[wlKey] = updatedWatchlist.tickers;
         refreshWatchlist({ ...watchLists });
-        WatchlistApiService.fetchWatchlists();
       }
 
       // Exit edit mode
