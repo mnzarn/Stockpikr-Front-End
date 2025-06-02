@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Watchlist from './Watchlist';
-import * as FirebaseConfig from '../services/FirebaseConfig';
+import * as FirebaseConfig from '../../services/FirebaseConfig';
 
 // Mock stock API
 jest.mock('../services/StockApiService', () => ({
@@ -163,4 +163,3 @@ describe('Watchlist Integration Tests', () => {
 
     expect(screen.getByText(/sign in/i)).toBeInTheDocument();
   });
-});

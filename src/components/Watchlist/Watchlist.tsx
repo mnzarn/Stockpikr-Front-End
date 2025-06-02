@@ -9,33 +9,33 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import {
-  Alert,
-  Box,
-  Button,
-  Checkbox,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Divider,
-  IconButton,
-  Menu,
-  MenuItem,
-  Paper,
-  SelectChangeEvent,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tabs,
-  TextField,
-  Tooltip,
-  Typography
+    Alert,
+    Box,
+    Button,
+    Checkbox,
+    Chip,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Divider,
+    IconButton,
+    Menu,
+    MenuItem,
+    Paper,
+    SelectChangeEvent,
+    Tab,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Tabs,
+    TextField,
+    Tooltip,
+    Typography
 } from '@mui/material';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
@@ -877,16 +877,66 @@ export default function Watchlist() {
   }
 
   function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
-    const valA = a[orderBy];
-    const valB = b[orderBy];
-
-    // Handle undefined safely
-    if (valA == null && valB == null) return 0;
-    if (valA == null) return 1;
-    if (valB == null) return -1;
-
-    if (valB < valA) return -1;
-    if (valB > valA) return 1;
+    // Handle all percentage fields
+    if (orderBy.toString().includes('Percentage') || 
+        orderBy.toString().includes('Deviation') || 
+        orderBy === 'alertPriceDeviationPercent' ||
+        orderBy.toString().includes('VsCurrentPercentage')) {
+      const aValue = a[orderBy] as number | null;
+      const bValue = b[orderBy] as number | null;
+      
+      // Handle null values
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
+      
+      // For alertPriceDeviationPercent, use the actual percentage value
+      if (orderBy === 'alertPriceDeviationPercent') {
+        const aPercent = (a as WatchlistTicker).price && (a as WatchlistTicker).alertPrice
+          ? ((a as WatchlistTicker).price - (a as WatchlistTicker).alertPrice) / (a as WatchlistTicker).alertPrice * 100
+          : null;
+        const bPercent = (b as WatchlistTicker).price && (b as WatchlistTicker).alertPrice
+          ? ((b as WatchlistTicker).price - (b as WatchlistTicker).alertPrice) / (b as WatchlistTicker).alertPrice * 100
+          : null;
+        
+        if (aPercent === null && bPercent === null) return 0;
+        if (aPercent === null) return 1;
+        if (bPercent === null) return -1;
+        
+        return bPercent - aPercent;
+      }
+      
+      // Compare numeric values for other percentage fields
+      return bValue - aValue;
+    }
+    
+    // Handle dollar value fields
+    if (orderBy === 'price' || 
+        orderBy === 'alertPrice' || 
+        orderBy.toString().includes('High') || 
+        orderBy.toString().includes('Low')) {
+      const aValue = a[orderBy] as number | null;
+      const bValue = b[orderBy] as number | null;
+      
+      // Handle null values
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
+      
+      // Compare numeric values
+      return bValue - aValue;
+    }
+    
+    // Handle other fields (like symbol)
+    const aValue = a[orderBy];
+    const bValue = b[orderBy];
+    
+    if (bValue < aValue) {
+      return -1;
+    }
+    if (bValue > aValue) {
+      return 1;
+    }
     return 0;
   }
 
@@ -895,22 +945,6 @@ export default function Watchlist() {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
-
-    // Force resort with new order
-    if (watchLists[wlKey]) {
-      let tickers = [...watchLists[wlKey]];
-      const newOrder = isAsc ? 'desc' : 'asc';
-      tickers.sort(getComparator(newOrder, property));
-
-      // Apply current filter
-      if (filterMode === 'gainers') {
-        tickers = tickers.filter((ticker) => (ticker.changesPercentage || 0) > 0);
-      } else if (filterMode === 'losers') {
-        tickers = tickers.filter((ticker) => (ticker.changesPercentage || 0) < 0);
-      }
-
-      setVisibleTickers(tickers);
-    }
   };
 
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1510,11 +1544,18 @@ export default function Watchlist() {
               borderRight: '1px solid black'
             }}
           >
-            {getAlertPriceDeviationPercent(row) !== null
-              ? (getAlertPriceDeviationPercent(row)! >= 0 ? '+' : '') +
-                getAlertPriceDeviationPercent(row)!.toFixed(2) +
-                '%'
-              : '0.00%'}
+            {getAlertPriceDeviationPercent(row) !== null ? (
+              <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                {(getAlertPriceDeviationPercent(row) || 0) >= 0 ? (
+                  <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }} />
+                ) : (
+                  <TrendingDownIcon fontSize="small" sx={{ mr: 0.5 }} />
+                )}
+                {Math.abs(getAlertPriceDeviationPercent(row) || 0).toFixed(2)}%
+              </Box>
+            ) : (
+              '0.00%'
+            )}
           </TableCell>
 
           {/* Timeframe-specific columns */}
