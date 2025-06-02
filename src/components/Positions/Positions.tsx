@@ -1,5 +1,5 @@
 export const validatePositionName = (name: string): { valid: boolean; message: string } => {
-  const validPattern = /^[a-zA-Z0-9\-_'\s]+$/;
+  const validPattern = /^[a-zA-Z0-9\-_\s']+$/;
 
   if (!validPattern.test(name)) {
     const invalidChars = name.split('').filter((char) => !validPattern.test(char));
@@ -7,14 +7,13 @@ export const validatePositionName = (name: string): { valid: boolean; message: s
 
     return {
       valid: false,
-      message: `Position name can only contain letters, numbers, hyphens (-), underscores (_), apostrophes ('), and spaces. Invalid characters: ${uniqueInvalidChars.join(' ')}`
+      message: `Position name can only contain letters, numbers, hyphens, underscores, spaces, and apostrophes. Invalid characters: ${uniqueInvalidChars.join(
+        ' '
+      )}`
     };
   }
 
-  return {
-    valid: true,
-    message: ''
-  };
+  return { valid: true, message: '' };
 };
 import AddIcon from '@mui/icons-material/Add';
 
@@ -142,7 +141,7 @@ const [positionNameError, setPositionNameError] = useState('');
   // Generate a unique ID for each position to use for selection
   const generatePositionId = (position: Ticker): string => {
 const datePart = position.purchaseDate ? new Date(position.purchaseDate).getTime() : 'null';
-return `${position.symbol}-${datePart}-${position.purchasePrice}-${position.quantity}`;
+return `${position.symbol}-${datePart}-${position.purchasePrice}-${position.quantity}-${position.targetSellPrice || 0}`;
   };
   const refreshPositions = (positions: Positions) => {
     setPositions(positions);
@@ -568,6 +567,7 @@ const keys = Object.keys(updated);
                 { id: 'symbol', label: 'Symbol', align: 'left' },
                 { id: 'quantity', label: 'Quantity', align: 'right' },
                 { id: 'purchasePrice', label: 'Purchase Price', align: 'right' },
+                { id: 'targetSellPrice', label: 'Target Sell Price', align: 'right' },
                 { id: 'price', label: 'Current Price', align: 'right' },
                 { id: 'priceChange', label: 'Price Change', align: 'right' },
                 { id: 'gainOrLoss', label: 'Gain/Loss', align: 'right' },
@@ -617,7 +617,7 @@ const keys = Object.keys(updated);
           <TableBody>
             {sortedPositions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} align="center">
+                <TableCell colSpan={10} align="center">
                   <Typography sx={{ py: 3, color: 'var(--secondary-blue)' }}>
                     No positions in your portfolio. Use the search bar above to add positions.
                   </Typography>
@@ -689,7 +689,7 @@ const keys = Object.keys(updated);
                     </TableCell>
 
                     <TableCell align="right">{formatCurrency(row.purchasePrice)}</TableCell>
-
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>{formatCurrency(row.price)}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600 }}>
                       {formatCurrency(row.price)}
                     </TableCell>
