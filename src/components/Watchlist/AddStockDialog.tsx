@@ -96,7 +96,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
     const cleanedPrice = price.trim().endsWith('.') ? price.trim() + '0' : price.trim();
 
     if (!cleanedPrice) {
-      setSellPriceError('Sell price cannot be empty');
+      setSellPriceError('Buy price cannot be empty');
       return false;
     }
 
@@ -325,7 +325,7 @@ const AddStockDialog: React.FC<AddStockDialogProps> = ({
            required
            fullWidth
            id="stock-price"
-           label="Sell price"
+           label="Buy price"
            type="text"
            variant="outlined"
            value={sellPrice}
