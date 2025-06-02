@@ -14,15 +14,10 @@ export class WatchlistApiService extends BaseApiService {
     // const searchQueryLimit = 10;
     const response = await super.fetchData<IWatchlistModel[]>(this.baseEndpoint);
     if (response) {
-      const prevData = sessionStorage.getItem('lastWatchlistData');
-    const newData = JSON.stringify(response);
-    if (prevData !== newData) {
-      sessionStorage.setItem('lastWatchlistData', newData);
-      window.location.reload(); // Reload only if data changed
+      window.location.reload();
+      return response;
     }
-    return response;
-  }
-  return [];
+    return [];
   }
 
   private static async addUserIdToEndpoint(endpoint: string): Promise<string> {
