@@ -1,19 +1,20 @@
-import {
-  Box,
-  Button,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  FormControl,
-  InputAdornment,
-  TextField,
-  Typography,
-  useMediaQuery,
-  useTheme
-} from '@mui/material';
+import
+  {
+    Box,
+    Button,
+    Chip,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Divider,
+    FormControl,
+    InputAdornment,
+    TextField,
+    Typography,
+    useMediaQuery,
+    useTheme
+  } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -22,7 +23,6 @@ import React, { useEffect, useState } from 'react';
 import { getErrorResponse } from '../../helper/errorResponse';
 import { PositionMap, Ticker } from '../../interfaces/IPurchasedStockModel';
 import { IStockQuote } from '../../interfaces/IStockQuote';
-import { PositionsApiService } from '../../services/PositionsApiService';
 import { StockApiService } from '../../services/StockApiService';
 import { useAsyncError } from '../GlobalErrorBoundary';
 
@@ -220,29 +220,16 @@ const AddPositionDialog: React.FC<AddPositionDialogProps> = ({
         throw new Error(`Could not find stock with symbol ${tickers.symbol} in the database!`);
       }
 
+      // Add the ticker using the parent component's handler
       await onAddTicker(tickers);
 
-      const updatedPurchasedStocks = await PositionsApiService.fetchPurchasedStocksByUserId();
-      if (!updatedPurchasedStocks) {
-        throw new Error(`Cannot find the purchased stocks data after adding new stocks`);
-      }
-
-      const updatedPositions: PositionMap = {};
-      for (const key in positions) {
-        updatedPositions[key] = positions[key];
-      }
-
-      // Add the updated positions
-      const userKey = Object.keys(positions)[0] || '';
-      updatedPositions[userKey] = updatedPurchasedStocks.flatMap((p) => p.tickers);
-
-      setPositions(updatedPositions);
-
-      // Reset form and close dialog
+      // Reset form and close dialog - let parent handle state updates
       setAddStockPrice('');
       setAddStockQuantity('');
       setAddStockDate(null);
+      setTargetSellPrice('');
       setAddStockDialog(false);
+      
     } catch (error) {
       throwError(error);
     }
