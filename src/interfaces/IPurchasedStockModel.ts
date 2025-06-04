@@ -5,7 +5,6 @@ export interface IPurchasedStockModel {
 }
 
 export interface Ticker {
-  id: string;
   symbol: string;
   purchasePrice: number;
   quantity: number;
