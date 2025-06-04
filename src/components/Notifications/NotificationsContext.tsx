@@ -63,6 +63,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         setNotificationCount(0);
         return;
       }
+
+      const EPSILON = 0.01;
       
       if (Array.isArray(watchlists)) {
         watchlists.forEach((wl) => {
@@ -81,7 +83,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
               }
             };
           
-            if (absPercentage == 0) {
+            if (absPercentage <= EPSILON) {
               exactMatches.push(notification);
             } else if (absPercentage <= 5) {
               nearMatches.push(notification);
