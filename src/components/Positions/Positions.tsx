@@ -1,22 +1,4 @@
-export const validatePositionName = (name: string): { valid: boolean; message: string } => {
-  const validPattern = /^[a-zA-Z0-9\-_\s']+$/;
-
-  if (!validPattern.test(name)) {
-    const invalidChars = name.split('').filter((char) => !validPattern.test(char));
-    const uniqueInvalidChars = [...new Set(invalidChars)];
-
-    return {
-      valid: false,
-      message: `Position name can only contain letters, numbers, hyphens, underscores, spaces, and apostrophes. Invalid characters: ${uniqueInvalidChars.join(
-        ' '
-      )}`
-    };
-  }
-
-  return { valid: true, message: '' };
-};
 import AddIcon from '@mui/icons-material/Add';
-
 import DeleteIcon from '@mui/icons-material/Delete';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -25,7 +7,6 @@ import {
   Box,
   Button,
   Checkbox,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -52,6 +33,23 @@ import { useAsyncError } from '../GlobalErrorBoundary';
 import WatchlistTickersSearchBar from '../Watchlist/WatchlistTickersSearchBar';
 import AddPositionDialog from './AddPositionDialog';
 
+const validatePositionName = (name: string): { valid: boolean; message: string } => {
+  const validPattern = /^[a-zA-Z0-9\-_\s']+$/;
+
+  if (!validPattern.test(name)) {
+    const invalidChars = name.split('').filter((char) => !validPattern.test(char));
+    const uniqueInvalidChars = [...new Set(invalidChars)];
+
+    return {
+      valid: false,
+      message: `Position name can only contain letters, numbers, hyphens, underscores, spaces, and apostrophes. Invalid characters: ${uniqueInvalidChars.join(
+        ' '
+      )}`
+    };
+  }
+
+  return { valid: true, message: '' };
+};
 
 type Order = 'asc' | 'desc';
 
@@ -132,17 +130,18 @@ export default function MyPositions() {
   const [addStockSymbol, setAddStockSymbol] = useState('');
   const [stockInfo, setStockInfo] = useState<IStockQuote>();
   const [positionKey, setPositionKey] = useState('');
-const [positionKeys, setPositionKeys] = useState<string[]>([]);
-const [createPositionOpen, setCreatePositionOpen] = useState(false);
-const [newPositionName, setNewPositionName] = useState('');
-const [positionNameError, setPositionNameError] = useState('');
+  const [positionKeys, setPositionKeys] = useState<string[]>([]);
+  const [createPositionOpen, setCreatePositionOpen] = useState(false);
+  const [newPositionName, setNewPositionName] = useState('');
+  const [positionNameError, setPositionNameError] = useState('');
   const throwError = useAsyncError();
 
   // Generate a unique ID for each position to use for selection
   const generatePositionId = (position: Ticker): string => {
-const datePart = position.purchaseDate ? new Date(position.purchaseDate).getTime() : 'null';
-return `${position.symbol}-${datePart}-${position.purchasePrice}-${position.quantity}-${position.targetSellPrice || 0}`;
+    const datePart = position.purchaseDate ? new Date(position.purchaseDate).getTime() : 'null';
+    return `${position.symbol}-${datePart}-${position.purchasePrice}-${position.quantity}-${position.targetSellPrice || 0}`;
   };
+
   const refreshPositions = (positions: Positions) => {
     setPositions(positions);
     setPositionKeys(Object.keys(positions));
@@ -173,16 +172,16 @@ return `${position.symbol}-${datePart}-${position.purchasePrice}-${position.quan
   // Get all positions as a flattened array with unique IDs
   // Use useMemo to prevent recreating this array on every render
   const positionsForSelectedPortfolio = useMemo(() => {
-  return (positions[positionKey] || []).map(position => ({
-    ...position,
-    positionId: generatePositionId(position)
-  }));
-}, [positions, positionKey]);
+    return (positions[positionKey] || []).map(position => ({
+      ...position,
+      positionId: generatePositionId(position)
+    }));
+  }, [positions, positionKey]);
 
   // Sort positions using the comparator
- const sortedPositions = useMemo(() => {
-  return [...positionsForSelectedPortfolio].sort(getComparator(order, orderBy));
-}, [positionsForSelectedPortfolio, order, orderBy]);
+  const sortedPositions = useMemo(() => {
+    return [...positionsForSelectedPortfolio].sort(getComparator(order, orderBy));
+  }, [positionsForSelectedPortfolio, order, orderBy]);
 
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
@@ -198,37 +197,27 @@ return `${position.symbol}-${datePart}-${position.purchasePrice}-${position.quan
   };
 
   const handleAddStockToPortfolio = async (newTicker: Ticker) => {
-  if (!positionKey) return;
+    if (!positionKey) return;
 
-  const existing = positions[positionKey] || [];
+    const existing = positions[positionKey] || [];
 
-  const alreadyExists = existing.some(t => t.symbol.toUpperCase() === newTicker.symbol.toUpperCase());
-  if (alreadyExists) {
-    alert(`Ticker ${newTicker.symbol} already exists in "${positionKey}"`);
-    return;
-  }
+    const updatedTickers = [...existing, newTicker];
 
-  const updatedTickers = [...existing, newTicker];
+    try {
+      const updated = await PositionsApiService.updatePurchasedStockTickers(positionKey, updatedTickers);
+      if (updated) {
+        setPositions(prev => ({
+          ...prev,
+          [positionKey]: updatedTickers 
+        }));
+        setAddStockDialog(false);
+        setAddStockSymbol('');
+      }
 
-  try {
-    const updated = await PositionsApiService.updatePurchasedStockTickers(positionKey, updatedTickers);
-if (updated) {
-  setPositions(prev => ({
-    ...prev,
-    [positionKey]: updatedTickers // not `updated.tickers`
-  }));
-  setAddStockDialog(false);
-  setAddStockSymbol('');
-  // Optional: await queryPurchasedStocks(); only if you suspect backend drift
-}
-
-  } catch (error) {
-    console.error("Failed to add stock to portfolio:", error);
-  }
-};
-
-
-
+    } catch (error) {
+      console.error("Failed to add stock to portfolio:", error);
+    }
+  };
 
   const handleDeleteStocks = async () => {
     try {
@@ -257,42 +246,41 @@ if (updated) {
       throwError(error);
     }
   };
+
   const handleCreateNewPosition = async () => {
-  setPositionNameError('');
+    setPositionNameError('');
 
-  if (!newPositionName.trim()) return;
+    if (!newPositionName.trim()) return;
 
-  const name = newPositionName.trim();
-  if (positionKeys.includes(name)) {
-    setPositionNameError('A position set with this name already exists.');
-    return;
-  }
-
-  const validation = validatePositionName(name);
-  if (!validation.valid) {
-    setPositionNameError(validation.message);
-    return;
-  }
-
-  try {
-    const result = await PositionsApiService.createPurchasedStockPortfolio(name, []);
-    if (result) {
-      const updated = { ...positions, [name]: [] };
-      setPositions(updated);
-      setPositionKeys(Object.keys(updated));
-      setPositionKey(name);
-      setCreatePositionOpen(false);
-      setNewPositionName('');
-    } else {
-      setPositionNameError('Failed to create position.');
+    const name = newPositionName.trim();
+    if (positionKeys.includes(name)) {
+      setPositionNameError('A position set with this name already exists.');
+      return;
     }
-  } catch (error) {
-    console.error('Error creating position:', error);
-    setPositionNameError('Something went wrong.');
-  }
-};
 
-  
+    const validation = validatePositionName(name);
+    if (!validation.valid) {
+      setPositionNameError(validation.message);
+      return;
+    }
+
+    try {
+      const result = await PositionsApiService.createPurchasedStockPortfolio(name, []);
+      if (result) {
+        const updated = { ...positions, [name]: [] };
+        setPositions(updated);
+        setPositionKeys(Object.keys(updated));
+        setPositionKey(name);
+        setCreatePositionOpen(false);
+        setNewPositionName('');
+      } else {
+        setPositionNameError('Failed to create position.');
+      }
+    } catch (error) {
+      console.error('Error creating position:', error);
+      setPositionNameError('Something went wrong.');
+    }
+  };
 
   const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof Ticker) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -300,28 +288,30 @@ if (updated) {
     setOrderBy(property);
   };
 
- const queryPurchasedStocks = async () => {
-  try {
-    const result = await PositionsApiService.fetchPurchasedStocksByUserId();
-    console.log('Fetched portfolios:', result);
-   const updated: { [key: string]: Ticker[] } = {};
-  result.forEach(r => {
-  updated[r.purchasedstocksName] = r.tickers; // r.name is the portfolio/position set name
-});
-const keys = Object.keys(updated);
+  const queryPurchasedStocks = async () => {
+    try {
+      const result = await PositionsApiService.fetchPurchasedStocksByUserId();
+      console.log('Fetched portfolios:', result);
+      const updated: { [key: string]: Ticker[] } = {};
 
-    setPositions(updated);
-    console.log('Updated positions:', updated);
-    setPositionKeys(keys);
+      result.forEach(r => {
+        updated[r.purchasedstocksName] = r.tickers; // r.name is the portfolio/position set name
+      });
 
-    if (!positionKey && keys.length > 0) {
-      setPositionKey(keys[0]); // ✅ set default selected tab
+      const keys = Object.keys(updated);
+
+      setPositions(updated);
+      console.log('Updated positions:', updated);
+      setPositionKeys(keys);
+
+      if (!positionKey && keys.length > 0) {
+        setPositionKey(keys[0]);
+      }
+
+    } catch (error) {
+      throwError(error);
     }
-  } catch (error) {
-    throwError(error);
-  }
-};
-
+  };
 
   useEffect(() => {
     queryPurchasedStocks();
@@ -669,19 +659,6 @@ const keys = Object.keys(updated);
                       >
                         {row.symbol}
                       </Box>
-                      {row.priceChange && (
-                        <Chip
-                          label={row.priceChange}
-                          size="small"
-                          sx={{
-                            ml: 1,
-                            backgroundColor: 'var(--background-light)',
-                            color: 'var(--secondary-blue)',
-                            fontWeight: 500,
-                            fontSize: '0.75rem'
-                          }}
-                        />
-                      )}
                     </TableCell>
 
                     <TableCell align="right" sx={{ fontWeight: 500 }}>
